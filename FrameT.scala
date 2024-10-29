@@ -6,7 +6,9 @@ trait FrameT{
   def setNextPieces(ps: List[Piece]): Unit
 
   /** Set the score to be `score`. */
-  def setScore(score: Int): Unit
+  //def setScore(score: Int): Unit
+
+  def updateInfo(): Unit
 
   def quitFrame: Unit
 

@@ -4,12 +4,14 @@ import scala.swing._
 import scala.swing.event._
 import java.awt.Color
 
+import BasePanel._
+
 /** The panel displaying the pipe network. */
 class PipePanel(model: Model, frame: FrameT) 
     extends BasePanel(model.width, model.height){
 
   /* Width and height of the grid. */
-  private val width = model.width; private val height = model.height
+  //private val width = model.width; private val height = model.height
 
   /** Convert grid coordinates to screen coordinates.  Return the screen
     * coordinates of the bottom-left corner of the grid square. */
@@ -46,11 +48,11 @@ class PipePanel(model: Model, frame: FrameT)
       }
     }
 
-    // Draw next piece
+    // Draw current piece
     if(mouseX >= 0 && mouseY >= 0 && model.grid(mouseX)(mouseY) == null){ 
       //println("showing")
-      g.setColor(NextPipeColour); val (x1,y1) = gridToScreen(mouseX,mouseY)
-      drawPiece(g, x1, y1, model.nextPiece)
+      g.setColor(CurrentPipeColour); val (x1,y1) = gridToScreen(mouseX,mouseY)
+      drawPiece(g, x1, y1, model.getCurrentPiece)
     }
 
     // Grid lines
@@ -70,7 +72,7 @@ class PipePanel(model: Model, frame: FrameT)
       case Key.Z => model.rotateLeft(); repaint()
       case Key.X => model.rotateRight(); repaint()
       case Key.K => model.killPiece(); repaint()
-      case Key.Enter => model.endLevel(); repaint()
+      // case Key.Enter => model.endLevel(); repaint()
       case _ => {}
     }
     case e: MouseClicked => 

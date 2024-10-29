@@ -9,26 +9,25 @@ class PipeFrame(model: Model) extends MainFrame with FrameT{
   private val panel = new PipePanel(model, this)
 
   /** The top panel, displaying the next piece. */
-  private val topPanel = new TopPanel(model.width)
+  private val topPanel = new TopPanel(model)
 
   /** Set the next piece to be p. */
-  def setNextPieces(ps: List[Piece]) = { 
-    topPanel.setNextPieces(ps) //; panel.repaint 
-  }
+  def setNextPieces(ps: List[Piece]) = topPanel.setNextPieces(ps)
 
-  // private val scorePanel = new TextField{
-  //   //editable = false; font = new Font("SansSerif", java.awt.Font.PLAIN, 16)
-  //   // rows = 2
-  // }
+  /** Panel displaying score. etc. */
+  private val infoPanel = new InfoPanel(model)
 
-  def setScore(score: Int) = topPanel.setScore(score) //  println(score) }
+  def updateInfo() = infoPanel.repaint()
 
   /* Add the components to this. */
   contents = new BoxPanel(Orientation.Vertical) {  
-    border = Swing.EmptyBorder(10)
-    contents += topPanel      
-    contents += Swing.HStrut(50)
-    contents += panel
+    import Swing._
+    border = EmptyBorder(10)
+    contents ++= List(topPanel, VStrut(5), infoPanel, VStrut(5))
+    contents += new BoxPanel(Orientation.Horizontal){ 
+      border = EmptyBorder(5)
+      contents ++= List(HStrut(20), HGlue, HGlue, panel, HGlue, HStrut(20))
+    }
   }
 
   import javax.swing.WindowConstants.EXIT_ON_CLOSE

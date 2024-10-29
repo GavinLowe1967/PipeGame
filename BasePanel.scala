@@ -5,12 +5,12 @@ import java.awt.Color
 
 /** The base class of the main and top panels.  Defines various operations
   * common to each, such as drawing pieces. */
-abstract class BasePanel(width: Int, height: Int) extends Panel{
+abstract class BasePanel(val width: Int, val height: Int) extends Panel{
   /** Size of one square in pixels. */ 
-  protected val SquareSize = 50
+  protected val SquareSize = 60
 
   /** Padding around between maze and edge of panel. */
-  protected val Pad = 5
+  protected val Pad = 0 // 5
 
   /** The with of a pipe. */
   private val PipeWidth = 16
@@ -30,12 +30,6 @@ abstract class BasePanel(width: Int, height: Int) extends Panel{
 
   preferredSize = new Dimension(scale(width)+2*Pad, scale(height)+2*Pad)
   minimumSize = preferredSize
-
-  protected val PipeColour = Color.blue
-
-  protected val BackgroundColour = Color.white
-
-  protected val NextPipeColour = new Color(160, 160, 255)
 
   /** A line from (x1,y1) to (x2,y2). */
   @inline protected def line(x1: Int, y1: Int, x2: Int, y2: Int) =
@@ -112,7 +106,20 @@ abstract class BasePanel(width: Int, height: Int) extends Panel{
     * from and from+90. */
   private def quarterCircle(x: Int, y: Int, radius: Int, from: Int) = 
     new Arc2D.Double(
-      x-radius, y-radius, 2*radius, 2*radius, from, 90, Arc2D.OPEN) //PIE
-  
+      x-radius, y-radius, 2*radius, 2*radius, from, 90, Arc2D.OPEN) 
+}
 
+// =======================================================
+
+object BasePanel{
+  /** Colour of pieces that have been played. */
+  val PipeColour = Color.blue
+
+  val BackgroundColour = Color.white
+
+  /** Colour of the current piece of pipe. */
+  val CurrentPipeColour = new Color(50, 50, 255)
+
+  /** Colour of the coming pieces. */
+  val QueuedPipeColour = new Color(160, 160, 255) // light blue
 }

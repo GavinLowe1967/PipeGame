@@ -1,0 +1,13 @@
+Complete checks in Model.endLevel.
+
+End the game if level failed.
+
+Animate end of level
+
+Have different levels, gradually getting harder.
+
+Have kill button
+
+Message box
+
+Grid lines in top panel

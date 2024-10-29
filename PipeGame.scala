@@ -3,12 +3,13 @@ package pipegame
 object PipeGame{
 
   def main(args: Array[String]) = {
-    val width = 10; val height = 10 // side of game
+    val width = 7; val height = 7 // side of game
 
     val model = new Model(width, height)
     val frame = new PipeFrame(model)
-    model.setFrame(frame)
+    model.init(frame)
     frame.peer.setLocationByPlatform(true)
+    frame.location = new scala.swing.Point(500,50)
     // frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack(); frame.visible = true
   }
