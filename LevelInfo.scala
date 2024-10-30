@@ -20,7 +20,7 @@ object LevelInfo{
  */
     LevelInfo(Array(0.22, 0.62, 0.0, 0.08, 0.08)),
     LevelInfo(Array(0.32, 0.52, 0.0, 0.08, 0.08)),
-    LevelInfo(Array(0.42, 0.42, 0.0, 0.08, 0.08)),
+    // LevelInfo(Array(0.42, 0.42, 0.0, 0.08, 0.08)), // too hard!
     LevelInfo(Array(0.40, 0.40, 0.20, 0.0, 0.0)),
     LevelInfo(Array(0.35, 0.45, 0.0, 0.10, 0.10)),
     LevelInfo(Array(0.33, 0.43, 0.0, 0.12, 0.12))

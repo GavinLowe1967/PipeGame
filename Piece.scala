@@ -13,12 +13,12 @@ object Piece{
   val NumShapes = 5
 
   /** The different pieces, partitioned by shape. */
-  val shapeClasses: Array[Array[Piece]] = Array(
+  val shapeClasses: Array[Array[() => Piece]] = Array(
     Array(NS, EW), Array(NE, NW, SE, SW), Array(NES, ESW, SWN, WNE),
     Array(Cross), Array(NSOverEW, EWOverNS)
   )
 
-  for(i <- 0 until NumShapes) assert(shapeClasses(i).forall(_.shapeIndex == i))
+  for(i <- 0 until NumShapes) assert(shapeClasses(i).forall(_().shapeIndex == i))
 }
 
 import Piece._
@@ -44,109 +44,134 @@ trait Piece{
   /** An index giving the shape of the piece: 0 = straight; 1 = curve; 2 = T; 
     * 3 = cross; 4 = cross-over. */
   val shapeIndex: Int
+
+  /** The score for playing a piece. */
+  val score: Int
 }
-/** A pipe running North-South. */
-case object NS extends Piece{
-  def rotateLeft = EW
-  def rotateRight = EW
-  val ends = List(N,S)
+
+// =======================================================
+
+/** Trait for straight pieces. */
+trait StraightPiece extends Piece{
   val shapeIndex = 0
+  val score = 1
+}
+
+/** A pipe running North-South. */
+case class NS() extends StraightPiece{
+  def rotateLeft = EW()
+  def rotateRight = EW()
+  val ends = List(N,S)
 }
 
 /** A pipe running East-West. */
-case object EW extends Piece{
-  def rotateLeft = NS
-  def rotateRight = NS
+case class EW() extends StraightPiece{
+  def rotateLeft = NS()
+  def rotateRight = NS()
   val ends = List(E,W)
-  val shapeIndex = 0
+}
+
+// ===== Curves
+
+/** Trait for curved pieces. */
+trait CurvedPiece extends Piece{
+  val shapeIndex = 1
+  val score = 2
 }
 
 /** A curved piece connecting North and East edges. */
-case object NE extends Piece{
-  def rotateLeft = NW
-  def rotateRight = SE
+case class NE() extends CurvedPiece{
+  def rotateLeft = NW()
+  def rotateRight = SE()
   val ends = List(N,E)
-  val shapeIndex = 1
 }
 
 /** A curved piece connecting North and West edges. */
-case object NW extends Piece{
-  def rotateLeft = SW
-  def rotateRight = NE
+case class NW() extends CurvedPiece{
+  def rotateLeft = SW()
+  def rotateRight = NE()
   val ends = List(N,W)
-  val shapeIndex = 1
 }
 
 /** A curved piece connecting South and East edges. */
-case object SE extends Piece{
-  def rotateLeft = NE
-  def rotateRight = SW
+case class SE() extends CurvedPiece{
+  def rotateLeft = NE()
+  def rotateRight = SW()
   val ends = List(S,E)
-  val shapeIndex = 1
 }
 
 /** A curved piece connecting South and West edges. */
-case object SW extends Piece{
-  def rotateLeft = SE
-  def rotateRight = NW
+case class SW() extends CurvedPiece{
+  def rotateLeft = SE()
+  def rotateRight = NW()
   val ends = List(S,W)
-  val shapeIndex = 1
+}
+
+// ===== T-junctions
+
+/** Trait for T-junction pieces. */
+trait TJunctionPiece extends Piece{
+  val shapeIndex = 2
+  val score = 3
 }
 
 /** A T-junction, with pipes to the North, East and South. */
-case object NES extends Piece{
-  def rotateLeft = WNE
-  def rotateRight = ESW 
+case class NES() extends TJunctionPiece{
+  def rotateLeft = WNE()
+  def rotateRight = ESW()
   val ends = List(N,E,S)
-  val shapeIndex = 2
 }
 
 /** A T-junction, with pipes to the East, South and West. */
-case object ESW extends Piece{
-  def rotateLeft = NES
-  def rotateRight = SWN
+case class ESW() extends TJunctionPiece{
+  def rotateLeft = NES()
+  def rotateRight = SWN()
   val ends = List(E,S,W)
-  val shapeIndex = 2
 }
 
 /** A T-junction, with pipes to the South, West and North. */
-case object SWN extends Piece{
-  def rotateLeft = ESW
-  def rotateRight = WNE
+case class SWN() extends TJunctionPiece{
+  def rotateLeft = ESW()
+  def rotateRight = WNE()
   val ends = List(S,W,N)
-  val shapeIndex = 2
 }
-
 
 /** A T-junction, with pipes to the West, North and East. */
-case object WNE extends Piece{
-  def rotateLeft = SWN
-  def rotateRight = NES
+case class WNE() extends TJunctionPiece{
+  def rotateLeft = SWN()
+  def rotateRight = NES()
   val ends = List(W,N,E)
-  val shapeIndex = 2
 }
 
+// ===== Crosses
+
 /** A cross piece, with pipes in all four directions. */
-case object Cross extends Piece{
-  def rotateLeft = Cross
-  def rotateRight = Cross
+case class Cross() extends Piece{
+  def rotateLeft = this
+  def rotateRight = this
   val ends = List(N,S,E,W)
   val shapeIndex = 3
+  val score = 4
+}
+
+// ===== Cross-overs
+
+/** Trait for cross-over pieces. */
+trait CrossOverPiece extends Piece{
+  val shapeIndex = 4
+  val score = 4
+  val ends = List(N,S,E,W)
 }
 
 /** A cross-over piece, with NS diretion above EW. */
-case object NSOverEW extends Piece{
-  def rotateLeft = EWOverNS
-  def rotateRight = EWOverNS
-  val ends = List(N,S,E,W)
-  val shapeIndex = 4
+case class NSOverEW() extends CrossOverPiece{
+  def rotateLeft = EWOverNS()
+  def rotateRight = EWOverNS()
 }
 
 /** A cross-over piece, with EW diretion above NS. */
-case object EWOverNS extends Piece{
-  def rotateLeft = NSOverEW
-  def rotateRight = NSOverEW
-  val ends = List(N,S,E,W)
-  val shapeIndex = 4
+case class EWOverNS() extends CrossOverPiece{
+  def rotateLeft = NSOverEW()
+  def rotateRight = NSOverEW()
 }
 

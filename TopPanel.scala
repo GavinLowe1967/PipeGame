@@ -28,5 +28,8 @@ class TopPanel(model: Model) extends BasePanel(model.NumNextPieces+1, 1){
     for(i <- 0 until nextPieces.length){
       drawPiece(g, Pad+scale(i+1), Pad+SquareSize, nextPieces(i))
     }
+    // Grid lines
+    g.setColor(GridColour)
+    for(i <- 1 to nextPieces.length) drawVLine(g,Pad+scale(i), Pad) 
   }
 }

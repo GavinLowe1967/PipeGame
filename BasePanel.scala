@@ -74,20 +74,20 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
     def drawWS = drawLine(g, x, y-PipePad, x+PipePad, y-PipePad)
     // Now pattern match
     p match{
-      case NS => drawWest; drawEast
-      case EW => drawNorth; drawSouth
-      case NE => drawQuarterArc(g, x+SquareSize, y-SquareSize, 180)
-      case NW => drawQuarterArc(g, x, y-SquareSize, 270)
-      case SE => drawQuarterArc(g, x+SquareSize, y, 90)
-      case SW => drawQuarterArc(g, x, y, 0)
-      case NES => drawWest; drawSE; drawNE; drawES; drawEN
-      case ESW => drawNorth; drawES; drawWS; drawSE; drawSW
-      case SWN => drawEast; drawSW; drawNW; drawWS; drawWN
-      case WNE => drawSouth; drawWN; drawEN; drawNE; drawNW
-      case Cross =>
+      case NS() => drawWest; drawEast
+      case EW() => drawNorth; drawSouth
+      case NE() => drawQuarterArc(g, x+SquareSize, y-SquareSize, 180)
+      case NW() => drawQuarterArc(g, x, y-SquareSize, 270)
+      case SE() => drawQuarterArc(g, x+SquareSize, y, 90)
+      case SW() => drawQuarterArc(g, x, y, 0)
+      case NES() => drawWest; drawSE; drawNE; drawES; drawEN
+      case ESW() => drawNorth; drawES; drawWS; drawSE; drawSW
+      case SWN() => drawEast; drawSW; drawNW; drawWS; drawWN
+      case WNE() => drawSouth; drawWN; drawEN; drawNE; drawNW
+      case Cross() =>
         drawNE; drawNW; drawSE; drawSW; drawWN; drawWS; drawEN; drawES
-      case NSOverEW => drawWest; drawEast; drawWN; drawWS; drawEN; drawES
-      case EWOverNS => drawNorth; drawSouth; drawNE; drawNW; drawSW; drawSE
+      case NSOverEW() => drawWest; drawEast; drawWN; drawWS; drawEN; drawES
+      case EWOverNS() => drawNorth; drawSouth; drawNE; drawNW; drawSW; drawSE
     }
     g.setStroke(new java.awt.BasicStroke(1)) // reset
   }
@@ -118,8 +118,10 @@ object BasePanel{
   val BackgroundColour = Color.white
 
   /** Colour of the current piece of pipe. */
-  val CurrentPipeColour = new Color(50, 50, 255)
+  val CurrentPipeColour = new Color(150, 0, 255)
 
   /** Colour of the coming pieces. */
   val QueuedPipeColour = new Color(160, 160, 255) // light blue
+
+  val GridColour = Color.black
 }

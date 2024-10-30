@@ -56,7 +56,7 @@ class PipePanel(model: Model, frame: FrameT)
     }
 
     // Grid lines
-    g.setColor(Color.black)
+    g.setColor(GridColour)
     for(x <- 0 to width) drawLine(x, 0, x, height)
     for(y <- 0 to height) drawLine(0, y, width, y)
   }

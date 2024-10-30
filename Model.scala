@@ -3,7 +3,7 @@ package pipegame
 import scala.util.Random
 
 class Model(val width: Int, val height: Int){
-  import Model.{scoreForPiece}
+  //import Model.{scoreForPiece}
   import Piece.NumShapes
 
   /** Total number of squares. */
@@ -58,7 +58,9 @@ class Model(val width: Int, val height: Int){
      * p*maxPieces-shapeCount(index) in the remaining maxPieces-count squares
      * and queue slots.  */
     // println(s"$p $size ${shapeCount(index)} $count")
-    ( (p*maxPieces-shapeCount(index)) / (maxPieces-count).toDouble ) max 0
+    ( (p*maxPieces-shapeCount(index)) / (maxPieces-count).toDouble ) //max 0
+    // The "max 0" can make the probabilities not sum to 1.
+// *** hink about this
   }
 
   /** Pick a Piece at random. */
@@ -69,12 +71,14 @@ class Model(val width: Int, val height: Int){
       if(level <= levels.length) levels(level-1) else defaultLevel
     // Adjust the probabilities based on the numbers of shapes played so far.
     val adjProbs = Array.tabulate(NumShapes)(i => adjustProb(probs(i), i))
-    assert(Math.abs(adjProbs.sum-1) < 0.0001)
+    assert(Math.abs(adjProbs.sum-1) < 0.0001,
+      probs.mkString(", ")+"\n"+shapeCount.mkString(", ")+"\n"+
+        adjProbs.mkString(", "))
     // Find min i s.t. sum adjProbs[0..i] >= rand
     var i = 0; var sum = 0.0; val rand = Random.nextFloat(); var done = false
     while(!done){ sum += adjProbs(i); if(sum >= rand) done = true else i += 1 }
     // Choose from shapeClasses(i)
-    val ps = shapeClasses(i); ps(Random.nextInt(ps.length))
+    val ps = shapeClasses(i); ps(Random.nextInt(ps.length))()
   }
 
 /*
@@ -178,7 +182,7 @@ class Model(val width: Int, val height: Int){
 
   /** Play at (x,y). */
   def playAt(x: Int, y: Int) = if(grid(x)(y) == null){
-    grid(x)(y) = currentPiece; addScore(scoreForPiece(currentPiece))
+    grid(x)(y) = currentPiece; addScore(currentPiece.score)
     // shapeCount(currentPiece.shapeIndex) += 1; count += 1
     if(isLevelOver){ println("End of level"); Thread.sleep(500); initLevel() }
     else getNextPiece()
@@ -188,7 +192,7 @@ class Model(val width: Int, val height: Int){
   def killPiece() = {
     if(killsLeft > 0){
       // Apply penalty equal to the piece's value.
-      addScore(-scoreForPiece(currentPiece))
+      addScore(-currentPiece.score)
       shapeCount(currentPiece.shapeIndex) -= 1; count -= 1
       killsLeft -= 1; frame.updateInfo()
       getNextPiece()
@@ -236,13 +240,13 @@ object Model{
   // }
 
 
-  /** The score for playing piece p. */
-  private def scoreForPiece(p: Piece) = p match{
-    case NS | EW => 1                // straight piece
-    case NE | NW | SE | SW => 2      // bend piece
-    case NES | ESW | SWN | WNE => 3  // T-piece
-    case Cross => 4                  // cross piece
-    case NSOverEW | EWOverNS => 4    // cross-over piece
-  }
+  // /** The score for playing piece p. */
+  // private def scoreForPiece(p: Piece) = p match{
+  //   case NS() | EW() => 1                // straight piece
+  //   case NE() | NW() | SE() | SW() => 2      // bend piece
+  //   case NES() | ESW() | SWN() | WNE() => 3  // T-piece
+  //   case Cross() => 4                  // cross piece
+  //   case NSOverEW() | EWOverNS() => 4    // cross-over piece
+  // }
 
 }
