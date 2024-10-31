@@ -13,11 +13,9 @@ case class LevelInfo(probs: Array[Double]){
 object LevelInfo{
 
   val levels = Array(
-/*
-    LevelInfo(0.5, 0.5, 0.0, 0.0, 0.0),
-    LevelInfo(0.6, 0.4, 0.0, 0.0, 0.0),
-    LevelInfo(0.4, 0.6, 0.0, 0.0, 0.0),
- */
+    LevelInfo(Array(0.50, 0.50, 0.0, 0.0, 0.0)),
+    // LevelInfo(0.6, 0.4, 0.0, 0.0, 0.0),
+    // LevelInfo(0.4, 0.6, 0.0, 0.0, 0.0),
     LevelInfo(Array(0.22, 0.62, 0.0, 0.08, 0.08)),
     LevelInfo(Array(0.32, 0.52, 0.0, 0.08, 0.08)),
     // LevelInfo(Array(0.42, 0.42, 0.0, 0.08, 0.08)), // too hard!

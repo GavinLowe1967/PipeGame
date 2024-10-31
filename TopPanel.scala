@@ -11,7 +11,8 @@ class TopPanel(model: Model) extends BasePanel(model.NumNextPieces+1, 1){
 
   /** Set the next peices to be ps, and repaint. */
   def setNextPieces(ps: List[Piece]) = { 
-    assert(ps.length == width-1, ps); nextPieces = ps; repaint() 
+    // assert(ps.length == width-1, ps); 
+    nextPieces = ps; repaint()
   }
 
   /** Paint this component. */
@@ -25,7 +26,7 @@ class TopPanel(model: Model) extends BasePanel(model.NumNextPieces+1, 1){
     g.setColor(CurrentPipeColour)
     drawPiece(g, Pad, Pad+SquareSize, model.getCurrentPiece) //  nextPieces(0))
     g.setColor(QueuedPipeColour)
-    for(i <- 0 until nextPieces.length){
+    for(i <- 0 until (nextPieces.length min (width-1))){
       drawPiece(g, Pad+scale(i+1), Pad+SquareSize, nextPieces(i))
     }
     // Grid lines

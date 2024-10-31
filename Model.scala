@@ -6,6 +6,9 @@ class Model(val width: Int, val height: Int){
   //import Model.{scoreForPiece}
   import Piece.NumShapes
 
+  private val random = 
+    new Random(Random.nextInt() ^ java.lang.System.currentTimeMillis)
+
   /** Total number of squares. */
   private val size = width*height
 
@@ -44,27 +47,29 @@ class Model(val width: Int, val height: Int){
 
   /** Count of how many pieces of each shape have been filled in the current
     * level. */
-  private val shapeCount = new Array[Int](NumShapes)
+  // private val shapeCount = new Array[Int](NumShapes)
 
   /** Number of pieces played. */
-  private var count = 0
+  //private var count = 0
 
   /** Adjusted probability for choosing a piece with shapeIndex index, based on
     * the squares so far, and that we are aiming for a proportion of p
     * overall. */
-  private def adjustProb(p: Double, index: Int) = {
-    /* We would expect to play p*maxPieces of these in a fully filled grid
-     * (including pieces in the queue); so another
-     * p*maxPieces-shapeCount(index) in the remaining maxPieces-count squares
-     * and queue slots.  */
-    // println(s"$p $size ${shapeCount(index)} $count")
-    ( (p*maxPieces-shapeCount(index)) / (maxPieces-count).toDouble ) //max 0
-    // The "max 0" can make the probabilities not sum to 1.
-// *** hink about this
-  }
+//   private def adjustProb(p: Double, index: Int) = {
+//     /* We would expect to play p*maxPieces of these in a fully filled grid
+//      * (including pieces in the queue); so another
+//      * p*maxPieces-shapeCount(index) in the remaining maxPieces-count squares
+//      * and queue slots.  */
+//     ( (p*maxPieces-shapeCount(index)) / (maxPieces-count).toDouble ) //max 0
+//     // The "max 0" can make the probabilities not sum to 1.
+// // *** think about this
+//   }
 
   /** Pick a Piece at random. */
   private def choosePiece(): Piece = {
+    val p = nextPieces.head; nextPieces = nextPieces.tail; p
+  }
+/*
     import LevelInfo._; import Piece.{shapeClasses,NumShapes}
     /* We pick based on probabilities from levels(level-1), or defaultLevel. */
     val LevelInfo(probs) = 
@@ -80,67 +85,85 @@ class Model(val width: Int, val height: Int){
     // Choose from shapeClasses(i)
     val ps = shapeClasses(i); ps(Random.nextInt(ps.length))()
   }
-
-/*
-    val straightProb = adjustProb(straightProb0, 0)
-    // println(s"Straight: $straightProb0 -> $straightProb")
-    val curveProb = adjustProb(curveProb0, 1)
-    val tProb = adjustProb(tProb0, 2)
-    val xProb = adjustProb(xProb0, 3)
-    val crossOverProb = adjustProb(crossOverProb0, 4)
-    assert(Math.abs(straightProb+curveProb+tProb+xProb+crossOverProb-1) < 0.0001)
-    // println(s"$straightProb $curveProb $xProb $crossOverProb") 
-    val rand = Random.nextFloat()
-    if(rand <= xProb) Cross
-    else if(rand <= xProb+crossOverProb) // Cross-over piece
-      Random.nextInt(2) match{ case 0 => NSOverEW; case 1 => EWOverNS }
-    else if(rand <= xProb+crossOverProb+tProb) // T-piece
-      Random.nextInt(4) match{ 
-        case 0 => NES; case 1 => ESW; case 2 => SWN; case 3 => WNE
-      }
-    else if(rand <= xProb+crossOverProb+tProb+straightProb)  // straight piece
-      Random.nextInt(2) match{ case 0 => NS; case 1 => EW }
-    else // bend piece 
-      chooseFrom(shapeClasses(1))
-      // Random.nextInt(4) match{
-      //   case 0 => NE; case 1 => NW; case 2 => SE; case 3 => SW
-      // }
  */
 
-  //private def chooseFrom(ps: Array[Piece]): Piece = ps(Random.nextInt(ps.length))
-
-  /** Pick a Piece at random, and record it in shapeCount and count. */
-  private def choosePieceAndTally(): Piece = {
-    val p = choosePiece(); shapeCount(p.shapeIndex) += 1; count += 1; p
-  }
+  // /** Pick a Piece at random, and record it in shapeCount and count. */
+  // private def choosePieceAndTally(): Piece = {
+  //   val p = choosePiece(); shapeCount(p.shapeIndex) += 1; count += 1; p
+  // }
 
   /** Initialise the next level. */
   private def initLevel() = {
     import Piece.{N,S,E,W}
-    level += 1; count = 0
-    for(i <- 0 until NumShapes) shapeCount(i) = 0
+    level += 1; // count = 0
+    // for(i <- 0 until NumShapes) shapeCount(i) = 0
     for(x <- 0 until width; y <- 0 until height) grid(x)(y) = null 
+    initNextPieces()
     // Choose source and sink pieces and positions, ensuring level is feasible
     sourceX = Random.nextInt(width); var p = choosePiece()
     while(!p.ends.contains(S) || (sourceX == 0 && p.ends.contains(W)) ||
-        (sourceX == width-1 && p.ends.contains(E)))
-      p = choosePiece()
-    grid(sourceX)(0) = p; shapeCount(p.shapeIndex) += 1; count += 1
+        (sourceX == width-1 && p.ends.contains(E))){
+      nextPieces = nextPieces :+ p.rotateLeft; p = choosePiece()
+      // If we can't place p here, we add it to the end of the queue; but we
+      // rotate it to guard against the case that no piece can be placed here.
+    }
+    grid(sourceX)(0) = p; // shapeCount(p.shapeIndex) += 1; count += 1
     sinkX = Random.nextInt(width); p = choosePiece()
     while(!p.ends.contains(N) || (sinkX == 0 && p.ends.contains(W)) ||
-        (sinkX == width-1 && p.ends.contains(E)))
-      p = choosePiece()
-    grid(sinkX)(height-1) = p; shapeCount(p.shapeIndex) += 1; count += 1
+        (sinkX == width-1 && p.ends.contains(E))){
+      nextPieces = nextPieces :+ p.rotateLeft; p = choosePiece()
+    }
+    grid(sinkX)(height-1) = p; // shapeCount(p.shapeIndex) += 1; count += 1
     currentPiece = choosePiece()
-    nextPieces = 
-      (for(_ <- 0 until NumNextPieces) yield choosePieceAndTally()).toList
+    println(nextPieces.mkString(", "))
+    // nextPieces = 
+    //   (for(_ <- 0 until NumNextPieces) yield choosePieceAndTally()).toList
     frame.setNextPieces(nextPieces)
+  }
+
+  /** Initialise nextPieces to length `size`, with pieces following the
+    * proportions for this level, as near as possible. */
+  private def initNextPieces() = {
+    import LevelInfo._
+    val LevelInfo(probs) = 
+      if(level <= levels.length) levels(level-1) else defaultLevel
+    // Each shape, with index ix, should appear roughly ideals(ix) =
+    // size*probs(ix) times: either the floor or the ceiling of that number.
+    val ideals = Array.tabulate[Double](NumShapes)(ix => size*probs(ix))
+    println(ideals.map(_.toString).mkString(", "))
+    val remainders = new Array[Double](NumShapes) 
+    // `remainders` will hold the fractional parts of `ideals`.  `pieces` are
+    // the pieces chosen so far.  `len = pieces.length`.
+    var pieces = List[Piece](); var len = 0
+    for(ix <- 0 until NumShapes){
+      // Add k = floor(ideals(ix)) shapes from shapeClasses(ix) to nextPieces.
+      val k = ideals(ix).toInt; len += k; remainders(ix) = ideals(ix)-k
+      pieces = List.fill(k)(choosePiece(ix)) ++ pieces
+    }
+    assert(len <= size && size-len < NumShapes)
+    // Add extra shapes from classes in extras: those with largest remainders.
+    val extras = (0 until NumShapes).sortBy(ix => -remainders(ix)).take(size-len)
+    for(ix <- extras){
+      val p = choosePiece(ix); println(s"Adding $p"); pieces ::= p //choosePiece(ix)
+    }
+    // Shuffle 
+    nextPieces = List(); len = size // Inv: len = pieces.length
+    while(len > 0){
+      val k = random.nextInt(len); val (pref, p::suf) = pieces.splitAt(k)
+      nextPieces ::= p; pieces = pref++suf; len -= 1
+    }
+    assert(pieces.isEmpty); println(nextPieces.mkString(", "))
+  }
+
+  /** Choose a random piece from shapeClasses(ix). */
+  @inline private def choosePiece(ix: Int): Piece = {
+    val ps = Piece.shapeClasses(ix); ps(random.nextInt(ps.length))()
   }
 
   /** Update state to move to the next piece. */
   private def getNextPiece() = {
     currentPiece = nextPieces.head; 
-    nextPieces = nextPieces.tail :+ choosePieceAndTally()
+    nextPieces = nextPieces.tail :+ choosePiece() // AndTally()
     frame.setNextPieces(nextPieces)
   }
 
@@ -183,7 +206,6 @@ class Model(val width: Int, val height: Int){
   /** Play at (x,y). */
   def playAt(x: Int, y: Int) = if(grid(x)(y) == null){
     grid(x)(y) = currentPiece; addScore(currentPiece.score)
-    // shapeCount(currentPiece.shapeIndex) += 1; count += 1
     if(isLevelOver){ println("End of level"); Thread.sleep(500); initLevel() }
     else getNextPiece()
   }
@@ -193,7 +215,9 @@ class Model(val width: Int, val height: Int){
     if(killsLeft > 0){
       // Apply penalty equal to the piece's value.
       addScore(-currentPiece.score)
-      shapeCount(currentPiece.shapeIndex) -= 1; count -= 1
+      // Replace at end of queue
+      nextPieces = nextPieces :+ currentPiece
+      // shapeCount(currentPiece.shapeIndex) -= 1; count -= 1
       killsLeft -= 1; frame.updateInfo()
       getNextPiece()
     }
@@ -214,39 +238,4 @@ class Model(val width: Int, val height: Int){
 object Model{
   private val random = 
     new Random(Random.nextInt() ^ java.lang.System.currentTimeMillis)
-
-  /* Probability of a Cross piece, a T-piece, respectively, a straight piece. */
-  // private val XProb = 0.03; private val CrossOverProb = 0.03
-  // private val TProb = 0.15; private val StraightProb = 0.40
-
-  // /** Pick a Piece at random. */
-  // private def choosePiece(levelInfo: LevelInfo): Piece = {
-  //   val LevelInfo(straightProb, curveProb, tProb, xProb, crossOverProb) = 
-  //     levelInfo
-  //   val rand = random.nextFloat()
-  //   if(rand <= xProb) Cross
-  //   else if(rand <= xProb+crossOverProb) // Cross-over piece
-  //     random.nextInt(2) match{ case 0 => NSOverEW; case 1 => EWOverNS }
-  //   else if(rand <= xProb+crossOverProb+tProb) // T-piece
-  //     random.nextInt(4) match{ 
-  //       case 0 => NES; case 1 => ESW; case 2 => SWN; case 3 => WNE
-  //     }
-  //   else if(rand <= xProb+crossOverProb+tProb+straightProb)  // straight piece
-  //     random.nextInt(2) match{ case 0 => NS; case 1 => EW }
-  //   else // bend piece 
-  //     random.nextInt(4) match{
-  //       case 0 => NE; case 1 => NW; case 2 => SE; case 3 => SW
-  //     }
-  // }
-
-
-  // /** The score for playing piece p. */
-  // private def scoreForPiece(p: Piece) = p match{
-  //   case NS() | EW() => 1                // straight piece
-  //   case NE() | NW() | SE() | SW() => 2      // bend piece
-  //   case NES() | ESW() | SWN() | WNE() => 3  // T-piece
-  //   case Cross() => 4                  // cross piece
-  //   case NSOverEW() | EWOverNS() => 4    // cross-over piece
-  // }
-
 }
