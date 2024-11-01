@@ -19,6 +19,8 @@ class PipeFrame(model: Model) extends MainFrame with FrameT{
 
   def updateInfo() = infoPanel.repaint()
 
+  def update() = panel.repaint() 
+
   /* Add the components to this. */
   contents = new BoxPanel(Orientation.Vertical) {  
     import Swing._

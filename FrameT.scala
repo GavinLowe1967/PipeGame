@@ -12,4 +12,6 @@ trait FrameT{
 
   def quitFrame: Unit
 
+
+  def update(): Unit
 }

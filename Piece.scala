@@ -8,6 +8,17 @@ object Piece{
   /* Representation of an open end of a piece. */
   val N = 0; val S = 1; val E = 2; val W = 3
 
+  /** The change in coordinates corresponding to moving in the direction given
+    * by `end`. */
+  def endToDelta(end: End) = end match{ 
+    case N => (0,1); case S => (0,-1); case E => (1,0); case W => (-1,0)
+  }
+
+  /** The reverse of the direction given by end. */
+  def reverse(end: End) = end match{
+    case N => S; case S => N; case E => W; case W => E 
+  }
+
   /** The number of different shapes.  Each `shapeIndex` is in the range
     * [0 .. NumShapes). */
   val NumShapes = 5
@@ -19,6 +30,9 @@ object Piece{
   )
 
   for(i <- 0 until NumShapes) assert(shapeClasses(i).forall(_().shapeIndex == i))
+
+  /** The number of steps taken to fill a piece during the fill animation. */
+  val FillSteps = 10
 }
 
 import Piece._
@@ -37,9 +51,7 @@ trait Piece{
   val ends: List[End]
 
   /** The offsets to squares attached to this piece by open ends. */
-  def deltas: List[(Int,Int)] = ends.map{ 
-    case N => (0,1); case S => (0,-1); case E => (1,0); case W => (-1,0)
-  }
+  def deltas: List[(Int,Int)] = ends.map(endToDelta)
 
   /** An index giving the shape of the piece: 0 = straight; 1 = curve; 2 = T; 
     * 3 = cross; 4 = cross-over. */
@@ -47,12 +59,44 @@ trait Piece{
 
   /** The score for playing a piece. */
   val score: Int
+
+  /** From which ends is water entering? */
+  protected val fillingFrom = new Array[Boolean](4)
+
+  /** Water starts to enter from `end`. */
+  def enterFrom(end: End) = {
+    assert(ends.contains(end)); fillingFrom(end) = true
+  }
+
+  /* Each subclass will have variables indicating how much the piece has been
+   * filled from each end.  These variables will hold values in the range
+   * [0..FillSteps]. */
+
+  /** One unit of water enters.  Expected to be called FillSteps times. */
+  def fillStep(): Unit
 }
 
 // =======================================================
 
+/** Trait for pieces with two ends. */
+trait TwoEndPiece extends Piece{
+  /** Proportion of the pipe that has been filled from each end. */
+  val filledFrom = new Array[Int](2)
+
+  /** One unit of water enters.  Expected to be called FillSteps times. */
+  def fillStep() = {
+    assert(fillingFrom(ends(0)) || fillingFrom(ends(1)))
+    for(ix <- 0 until 2) if(fillingFrom(ends(ix))) filledFrom(ix) += 1
+  }
+}
+
+/* Note: we will follow the convention that, for two-ended pieces, the name of
+ * the class matches the order of ends. */
+
+// =======================================================
+
 /** Trait for straight pieces. */
-trait StraightPiece extends Piece{
+trait StraightPiece extends TwoEndPiece{
   val shapeIndex = 0
   val score = 1
 }
@@ -74,7 +118,7 @@ case class EW() extends StraightPiece{
 // ===== Curves
 
 /** Trait for curved pieces. */
-trait CurvedPiece extends Piece{
+trait CurvedPiece extends TwoEndPiece{
   val shapeIndex = 1
   val score = 2
 }
@@ -113,7 +157,27 @@ case class SW() extends CurvedPiece{
 trait TJunctionPiece extends Piece{
   val shapeIndex = 2
   val score = 3
+
+  /** Proportion of the pipe that has been filled from each end. */
+  val filledFrom = new Array[Int](3)
+
+  /** Amount by which the piece is filled from the centre. */
+  var filledFromCentre = 0
+
+  def fillStep() = {
+    assert(fillingFrom(ends(0)) || fillingFrom(ends(1)) || fillingFrom(ends(3)))
+    for(ix <- 0 until 3) if(fillingFrom(ends(ix))){
+      filledFrom(ix) += 1  
+      filledFromCentre = filledFrom(ix)-FillSteps/2 max 0
+      // Note: it the piece is being filled from several ends, the previous
+      // line will have an effect for only one such end.
+    }
+  }
 }
+
+/* Note: we will follow the convention that, for T-junction pieces, the name
+ * of the class matches the order of ends. */
+
 
 /** A T-junction, with pipes to the North, East and South. */
 case class NES() extends TJunctionPiece{
@@ -152,6 +216,7 @@ case class Cross() extends Piece{
   val ends = List(N,S,E,W)
   val shapeIndex = 3
   val score = 4
+  def fillStep() = { } // FIXME
 }
 
 // ===== Cross-overs
@@ -161,6 +226,7 @@ trait CrossOverPiece extends Piece{
   val shapeIndex = 4
   val score = 4
   val ends = List(N,S,E,W)
+  def fillStep() = { } // FIXME
 }
 
 /** A cross-over piece, with NS diretion above EW. */

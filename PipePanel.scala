@@ -28,6 +28,7 @@ class PipePanel(model: Model, frame: FrameT)
 
   /** Paint this component. */
   override def paintComponent(g: Graphics2D) = {
+    //println("PipePanel.paintComponent")
     /* Helper function. */
     /* Draw a line from (x1,y1) to (x2,y2) (in grid coordinates). */
     @inline def drawLine(x1: Int, y1: Int, x2: Int, y2: Int) = {
@@ -38,6 +39,15 @@ class PipePanel(model: Model, frame: FrameT)
     super.paintComponent(g)
     g.setColor(BackgroundColour)
     g.fillRect(Pad, Pad, scale(width), scale(height))
+
+    // Draw water in pipes
+    g.setColor(WaterColour)
+    for(x <- 0 until width; y <- 0 until height){
+      val p = model.grid(x)(y)
+      if(p != null){
+        val (x1,y1) = gridToScreen(x,y); fillPipe(g, x1, y1, p)
+      }
+    }
 
     // Draw pipes
     g.setColor(PipeColour)
