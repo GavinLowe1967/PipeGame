@@ -1,13 +1,17 @@
-Complete checks in Model.endLevel.
+1. Finish animating pieces -- done
+
+2. When filling, don't display current piece.  
+
+3. Complete checks in Model.endLevel.
+
+4. Improve printing of curves -- refactor
+
+5. Have "next level" button
 
 End the game if level failed.
-
-Animate end of level
 
 Have different levels, gradually getting harder.
 
 Have kill button
 
 Message box
-
-Grid lines in top panel -- done

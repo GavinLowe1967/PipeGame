@@ -11,15 +11,16 @@ case class LevelInfo(probs: Array[Double]){
 
 
 object LevelInfo{
-
+  /** Information about the levels of the game. */
   val levels = Array(
-    LevelInfo(Array(0.50, 0.50, 0.0, 0.0, 0.0)),
+    null,  // levels are indexed from 0, so a dummy value
+    LevelInfo(Array(0.50, 0.50, 0.0, 0.0, 0.0)),  // straights & curves
     // LevelInfo(0.6, 0.4, 0.0, 0.0, 0.0),
     // LevelInfo(0.4, 0.6, 0.0, 0.0, 0.0),
-    LevelInfo(Array(0.22, 0.62, 0.0, 0.08, 0.08)),
+    LevelInfo(Array(0.22, 0.62, 0.0, 0.08, 0.08)), // crosses, cross-overs
     LevelInfo(Array(0.32, 0.52, 0.0, 0.08, 0.08)),
     // LevelInfo(Array(0.42, 0.42, 0.0, 0.08, 0.08)), // too hard!
-    LevelInfo(Array(0.40, 0.40, 0.20, 0.0, 0.0)),
+    LevelInfo(Array(0.40, 0.40, 0.20, 0.0, 0.0)),  // T-pieces
     LevelInfo(Array(0.35, 0.45, 0.0, 0.10, 0.10)),
     LevelInfo(Array(0.33, 0.43, 0.0, 0.12, 0.12))
   )

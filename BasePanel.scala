@@ -79,9 +79,10 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
     //   x-radius, y-radius, 2*radius, 2*radius, from, 90, Arc2D.OPEN) 
 
 
-  private def quarterPie(x: Int, y: Int, radius: Int, from: Int, angle: Int) = 
-    new Arc2D.Double(
-      x-radius, y-radius, 2*radius, 2*radius, from, angle, Arc2D.PIE) 
+  // private def quarterPie(x: Int, y: Int, radius: Int, from: Int, angle: Int) = 
+  //   new Arc2D.Double(
+  //     x-radius, y-radius, 2*radius, 2*radius, from, angle, Arc2D.PIE)
+  
 
 
   // ===== Drawing a piece
@@ -90,8 +91,6 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
   protected 
   def drawPiece(g: Graphics2D, x: Int, y: Int, p: Piece) = {
     // println(s"BasePanel.drawPiece $p")
-    setPenToDrawPipe(g)
-    // g.setStroke(new java.awt.BasicStroke(4))
     /* Full lines, to the north, south, east, west of the pipe, respectively. */
     def drawNorth = drawHLine(g, x, y-SquareSize+PipePad)
     def drawSouth = drawHLine(g, x, y-SquareSize+PipePad+PipeWidth)
@@ -111,11 +110,8 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
     def drawES = drawLine(g, x+PipeEnd, y-PipePad, x+SquareSize, y-PipePad)
     def drawWN = drawLine(g, x, y-PipeEnd, x+PipePad, y-PipeEnd)
     def drawWS = drawLine(g, x, y-PipePad, x+PipePad, y-PipePad)
-    /* Draw water. */
-    // def drawWaterFromS(steps: Int) = {
-    //   val height = steps*SquareSize/Piece.FillSteps
-    //   g.fillRect(x+PipePad, y-height, PipeWidth, height)
-    // }
+
+    setPenToDrawPipe(g)
     // Now pattern match
     p match{
       case NS() => drawWest; drawEast
@@ -136,14 +132,17 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
     g.setStroke(new java.awt.BasicStroke(1)) // reset
   }
 
+  /** The size, in screen coordinates, of `steps` steps of filling. */
+  @inline private def sizeFor(steps: Int) = steps*SquareSize/Piece.FillSteps
+
   /** Draw the water within piece p in a square with bottom-left corner (x,y). */
   protected def fillPipe(g: Graphics2D, x: Int, y: Int, p: Piece) = {
     import Piece.{N,S,E,W,FillSteps}
-    g.setStroke(new java.awt.BasicStroke(2))
+
     /* Draw water along a straight pipe, starting at end `end`, for `steps`
      * steps. */
     def drawWaterFrom(end: Int, steps: Int) = {
-      val size = steps*SquareSize/FillSteps
+      val size = sizeFor(steps)
       end match{
         case S => g.fillRect(x+PipePad, y-size, PipeWidth, size)
         case N => g.fillRect(x+PipePad, y-SquareSize, PipeWidth, size)
@@ -160,24 +159,90 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
       for(r <- PipePad+1 to PipeWidth+PipePad-1)
         g.draw(arc(xx, yy, r, from, angle))
     }
+
+    /* Draw water from the centre of a pipe towards end `end`, for `steps`
+     * steps. */
+    def drawWaterTowards(end: Int, steps: Int) = {
+      val size = sizeFor(steps)
+      end match{
+        case S => g.fillRect(x+PipePad, y-SquareSize/2, PipeWidth, size)
+        case N => g.fillRect(x+PipePad, y-SquareSize/2-size, PipeWidth, size)
+        case E => 
+          g.fillRect(x+SquareSize/2, y-SquareSize+PipePad, size, PipeWidth)
+        case W => 
+          g.fillRect(x+SquareSize/2-size, y-SquareSize+PipePad, size, PipeWidth)
+      }
+    }
+
+    /* Draw water along the underside of a cross-over piece. */
+    def drawWaterUnderpass(end: Int, steps: Int) = {
+      val size = sizeFor(steps)
+      val size1 = size min PipePad // size up to underpass
+      val beyond = size-PipePad-PipeWidth // size beyond underpass
+      end match{
+        case S => 
+          g.fillRect(x+PipePad, y-size1, PipeWidth, size1)
+          if(beyond > 0) g.fillRect(x+PipePad, y-size, PipeWidth, beyond)
+        case N => 
+          g.fillRect(x+PipePad, y-SquareSize, PipeWidth, size1)
+          if(beyond > 0) g.fillRect(x+PipePad, y-PipePad, PipeWidth, beyond)
+        case W => 
+          g.fillRect(x, y-SquareSize+PipePad, size1, PipeWidth)
+          if(beyond > 0) g.fillRect(
+            x+PipePad+PipeWidth, y-SquareSize+PipePad, beyond, PipeWidth)
+        case E =>
+          g.fillRect(x+SquareSize-size1, y-SquareSize+PipePad, size1, PipeWidth)
+          if(beyond > 0) g.fillRect(
+            x+SquareSize-size, y-SquareSize+PipePad, beyond, PipeWidth)
+      }
+    }
+
+    g.setStroke(new java.awt.BasicStroke(2))
     // Now pattern match on p
     p match{
-      case tep: StraightPiece =>
-        for(ix <- 0 until 2) drawWaterFrom(tep.ends(ix), tep.filledFrom(ix))
-      case ne: NE =>
-        drawWaterArc(x+SquareSize, y-SquareSize, 180, ne.filledFrom(0))
-        drawWaterArc(x+SquareSize, y-SquareSize, 270, -ne.filledFrom(1))
-      case nw: NW => 
-        drawWaterArc(x, y-SquareSize, 0, -nw.filledFrom(0))
-        drawWaterArc(x, y-SquareSize, 270, nw.filledFrom(1))
-      case se: SE =>
-        drawWaterArc(x+SquareSize, y, 180, -se.filledFrom(0))
-        drawWaterArc(x+SquareSize, y, 90, se.filledFrom(1))
-      case sw: SW => 
-        drawWaterArc(x, y, 0, sw.filledFrom(0))
-        drawWaterArc(x, y, 90, -sw.filledFrom(1))
-      case _ => {}
+      case _: StraightPiece =>
+        for(ix <- 0 until 2) drawWaterFrom(p.ends(ix), p.filledFrom(ix))
+
+      // IMPROVE following
+      case NE() =>
+        drawWaterArc(x+SquareSize, y-SquareSize, 180, p.filledFrom(0))
+        drawWaterArc(x+SquareSize, y-SquareSize, 270, -p.filledFrom(1))
+      case NW() => 
+        drawWaterArc(x, y-SquareSize, 0, -p.filledFrom(0))
+        drawWaterArc(x, y-SquareSize, 270, p.filledFrom(1))
+      case SE() =>
+        drawWaterArc(x+SquareSize, y, 180, -p.filledFrom(0))
+        drawWaterArc(x+SquareSize, y, 90, p.filledFrom(1))
+      case SW() => 
+        drawWaterArc(x, y, 0, p.filledFrom(0))
+        drawWaterArc(x, y, 90, -p.filledFrom(1))
+
+      case _: TJunctionPiece =>
+        // Draw from ends inwards
+        for(ix <- 0 until 3)
+          drawWaterFrom(p.ends(ix), p.filledFrom(ix) min FillSteps/2)
+        val maxFill = p.filledFrom.max
+        // Draw outwards from middle
+        if(maxFill > FillSteps/2) 
+          for(ix <- 0 until 3) 
+            drawWaterTowards(p.ends(ix), maxFill-FillSteps/2)
+
+      case Cross() =>
+        for(ix <- 0 until 4) drawWaterFrom(p.ends(ix), p.filledFrom(ix))
+        val maxFill = p.filledFrom.max
+        // Draw outwards from middle
+        if(maxFill > FillSteps/2) 
+          for(ix <- 0 until 4) drawWaterTowards(p.ends(ix), maxFill-FillSteps/2)
+
+      case cop: CrossOverPiece =>
+        for(ix <- 0 until 4){
+          val end = cop.ends(ix)
+          if(cop.overEnds.contains(end))
+            drawWaterFrom(end, cop.filledFrom(ix))
+          else drawWaterUnderpass(end, cop.filledFrom(ix))
+        }
     }
+    g.setStroke(new java.awt.BasicStroke(1)) // reset
   }
 }
 

@@ -2,7 +2,7 @@ package pipegame
 
 import scala.util.Random
 
-class Model(val width: Int, val height: Int){
+class Model(val width: Int, val height: Int, level0: Int){
   import Piece.{NumShapes,FillSteps}
 
   private val random = 
@@ -36,7 +36,7 @@ class Model(val width: Int, val height: Int){
   def getCurrentPiece = currentPiece 
 
   /** The current level. */
-  private var level = 0
+  private var level = level0
 
   /** Get the current level.  Called by InfoPanel. */
   def getLevel = level
@@ -49,7 +49,7 @@ class Model(val width: Int, val height: Int){
   /** Initialise the next level. */
   private def initLevel() = {
     import Piece.{N,S,E,W}
-    level += 1
+    // level += 1
     for(x <- 0 until width; y <- 0 until height) grid(x)(y) = null 
     initNextPieces()
     // Choose source and sink pieces and positions, ensuring level is feasible
@@ -72,12 +72,14 @@ class Model(val width: Int, val height: Int){
     frame.setNextPieces(nextPieces)
   }
 
+  private def nextLevel() = { level += 1; initLevel(); frame.update() }
+
   /** Initialise nextPieces to length `size`, with pieces following the
     * proportions for this level, as near as possible. */
   private def initNextPieces() = {
     import LevelInfo._
     val LevelInfo(probs) = 
-      if(level <= levels.length) levels(level-1) else defaultLevel
+      if(level < levels.length) levels(level) else defaultLevel
     // Each shape, with index ix, should appear roughly ideals(ix) =
     // size*probs(ix) times: either the floor or the ceiling of that number.
     val ideals = Array.tabulate[Double](NumShapes)(ix => size*probs(ix))
@@ -154,36 +156,55 @@ class Model(val width: Int, val height: Int){
     true
   }
 
+  /** Time to fill one square. */
+  private val SquareFillTime = 250
+
   /** Animate the filling of the pipes. */
   private def fillPipes() = {
+    import Piece.{S,End,endToDelta,reverse}
     println("End of level")
     /* We perform a breadth-first traversal.  At each ply, we fill all pieces in
-     * the current ply, then move to the next ply.  `frontier` holds the
-     * current frontier of the traversal, and `seen` the coordinates seen
-     * previously. */ 
-    var frontier = List((sourceX,0))
-    grid(sourceX)(0).enterFrom(Piece.S)
-    val seen = Array.ofDim[Boolean](width, height); seen(sourceX)(0) = true
+     * the current ply, then move to the next ply.  Note, though, that in
+     * order to cater for cross-over pieces, we need to keep track of the
+     * direction from which a piece was entered.  `frontier` holds the current
+     * frontier of the traversal: each coordinate together with the direction
+     * from which it was entered.  `seen` holds each coordinate reached
+     * previously, together with each end connected to the end by which it was
+     * entered. */ 
+    var frontier = List((sourceX,0,S))
+    grid(sourceX)(0).enterFrom(S)
+    val seen = Array.ofDim[Boolean](width, height, 4); 
+    for(end <- grid(sourceX)(0).connectsTo(S))
+      seen(sourceX)(0)(end) = true // ; print((sourceX, 0, end)) }
+    // println()
     while(frontier.nonEmpty){ 
-      // println(frontier.map(_.toString).mkString(", "))
+      // println("Frontier = "+frontier.map(_.toString).mkString(", "))
       // Animate filling.
-      val frontierPs = frontier.map{ case(x,y) => grid(x)(y) }
+      val frontierPs = 
+        frontier.map{case(x,y,_) => (x,y)}.distinct.map{case (x,y) => grid(x)(y)}
       for(i <- 0 until FillSteps){
         for(p <- frontierPs) p.fillStep()
-        Thread.sleep(200/FillSteps); frame.update() // IMPROVE
+        Thread.sleep(SquareFillTime/FillSteps); frame.update() 
       }
       // Find frontier for next iteration
-      var newFrontier = List[(Int,Int)]()
-      for((x,y) <- frontier; end <- grid(x)(y).ends){
-        val (dx,dy) = Piece.endToDelta(end); val xx = x+dx; val yy = y+dy
+      var newFrontier = List[(Int,Int,End)]()
+      for((x,y,d) <- frontier; end <- grid(x)(y).connectsTo(d)){ // end != d
+        // We entered from d, so we can exit via end
+        val (dx,dy) = endToDelta(end); val xx = x+dx; val yy = y+dy
         if(yy == height) assert((x,y) == (sinkX,height-1))
         else if(yy < 0) assert((x,y) == (sourceX,0))
-        else if(!seen(xx)(yy)){     // water can flow from (x,y) into (xx)(yy)
-          grid(xx)(yy).enterFrom(Piece.reverse(end)); newFrontier ::= ((xx,yy))
+        else if(!seen(xx)(yy)(reverse(end))){   
+          // water can flow from (x,y) into (xx)(yy), entering via reverse(end)
+          grid(xx)(yy).enterFrom(reverse(end))
+          newFrontier ::= ((xx,yy,reverse(end)))
         }
       } // end of for loop
       frontier = newFrontier.distinct
-      for((xx,yy) <- frontier) seen(xx)(yy) = true
+      // Record that we've seen these triples, but also any other connected
+      // end of the same square.
+      for((xx,yy,e) <- frontier; e1 <- grid(xx)(yy).connectsTo(e))
+        seen(xx)(yy)(e1) = true //; print((xx,yy,e1)) }
+      // println()
       // Note: we update `seen` only at the end of the ply, because we might
       // want water to enter a particular piece from two directions.
     } // end of while(frontier.nonEmpty)
@@ -193,7 +214,7 @@ class Model(val width: Int, val height: Int){
   def playAt(x: Int, y: Int) = if(grid(x)(y) == null){
     grid(x)(y) = currentPiece; addScore(currentPiece.score)
     if(isLevelOver) Concurrency.runThread{ 
-      fillPipes(); Thread.sleep(500); initLevel(); frame.update()
+      fillPipes(); Thread.sleep(2000); nextLevel() // FIXME
     }
     else getNextPiece()
   }

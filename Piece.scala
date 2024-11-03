@@ -60,6 +60,11 @@ trait Piece{
   /** The score for playing a piece. */
   val score: Int
 
+  /** The ends connected to `end`.  By default, all  ends; but this is
+    * overwritten for cross-over pieces.  It is assumed that the resulting
+    * relation is symmetric. */
+  def connectsTo(end: End): List[End] = ends // .filter(_ != end)
+
   /** From which ends is water entering? */
   protected val fillingFrom = new Array[Boolean](4)
 
@@ -72,8 +77,18 @@ trait Piece{
    * filled from each end.  These variables will hold values in the range
    * [0..FillSteps]. */
 
+  /** Proportion of the pipe that has been filled from each end.  Each entry
+   * holds a value in the range [0..FillSteps]. */
+  val filledFrom: Array[Int]
+
   /** One unit of water enters.  Expected to be called FillSteps times. */
-  def fillStep(): Unit
+  def fillStep() = {
+    assert(fillingFrom.exists(b => b))
+    for(ix <- 0 until ends.length; if fillingFrom(ends(ix))){
+      filledFrom(ix) += 1; assert(filledFrom(ix) <= FillSteps)
+      if(filledFrom(ix) == FillSteps) fillingFrom(ends(ix)) = false // full
+    }
+  }
 }
 
 // =======================================================
@@ -82,12 +97,6 @@ trait Piece{
 trait TwoEndPiece extends Piece{
   /** Proportion of the pipe that has been filled from each end. */
   val filledFrom = new Array[Int](2)
-
-  /** One unit of water enters.  Expected to be called FillSteps times. */
-  def fillStep() = {
-    assert(fillingFrom(ends(0)) || fillingFrom(ends(1)))
-    for(ix <- 0 until 2) if(fillingFrom(ends(ix))) filledFrom(ix) += 1
-  }
 }
 
 /* Note: we will follow the convention that, for two-ended pieces, the name of
@@ -161,18 +170,8 @@ trait TJunctionPiece extends Piece{
   /** Proportion of the pipe that has been filled from each end. */
   val filledFrom = new Array[Int](3)
 
-  /** Amount by which the piece is filled from the centre. */
-  var filledFromCentre = 0
-
-  def fillStep() = {
-    assert(fillingFrom(ends(0)) || fillingFrom(ends(1)) || fillingFrom(ends(3)))
-    for(ix <- 0 until 3) if(fillingFrom(ends(ix))){
-      filledFrom(ix) += 1  
-      filledFromCentre = filledFrom(ix)-FillSteps/2 max 0
-      // Note: it the piece is being filled from several ends, the previous
-      // line will have an effect for only one such end.
-    }
-  }
+  // /** Amount by which the piece is filled from the centre. */
+  // var filledFromCentre = 0
 }
 
 /* Note: we will follow the convention that, for T-junction pieces, the name
@@ -216,7 +215,7 @@ case class Cross() extends Piece{
   val ends = List(N,S,E,W)
   val shapeIndex = 3
   val score = 4
-  def fillStep() = { } // FIXME
+  val filledFrom = new Array[Int](4)
 }
 
 // ===== Cross-overs
@@ -226,18 +225,33 @@ trait CrossOverPiece extends Piece{
   val shapeIndex = 4
   val score = 4
   val ends = List(N,S,E,W)
-  def fillStep() = { } // FIXME
+  // The ends attached to the "over" part
+  val overEnds: List[End]
+  // Each end connects to the opposite end. 
+  override def connectsTo(end: End) = List(end, reverse(end))
+  val filledFrom = new Array[Int](4)
+
+  // override def fillStep() = {
+  //   assert(fillingFrom.exists(b => b))
+  //   for(ix <- 0 until ends.length; if fillingFrom(ends(ix))){
+  //     println("Filling from "+ends(ix))
+  //     filledFrom(ix) += 1; assert(filledFrom(ix) <= FillSteps)
+  //     if(filledFrom(ix) == FillSteps) fillingFrom(ends(ix)) = false // full
+  //   }
+  // }
 }
 
 /** A cross-over piece, with NS diretion above EW. */
 case class NSOverEW() extends CrossOverPiece{
   def rotateLeft = EWOverNS()
   def rotateRight = EWOverNS()
+  val overEnds = List(N,S)
 }
 
 /** A cross-over piece, with EW diretion above NS. */
 case class EWOverNS() extends CrossOverPiece{
   def rotateLeft = NSOverEW()
   def rotateRight = NSOverEW()
+  val overEnds = List(E,W)
 }
 
