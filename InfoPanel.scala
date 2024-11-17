@@ -3,7 +3,11 @@ package pipegame
 import scala.swing._
 
 /** A panel containing information about score, etc. */
-class InfoPanel(model: Model) extends BasePanel(model.width, 2){
+class InfoPanel(model: Model) extends BasePanel{
+  val width = model.width
+
+  setSize(width, 2)
+
   /** Font for displaying the score. */
   private val scoreFont = new Font("SansSerif", java.awt.Font.PLAIN, 24)
 

@@ -1,6 +1,10 @@
 package pipegame
 
+trait GameObject
 
+object Obstacle extends GameObject
+
+/** Companion object for pieces on the board. */
 object Piece{
   /** Type representing an open end of a piece. */
   type End = Int
@@ -40,7 +44,7 @@ import Piece._
 // =======================================================
 
 /** A piece on the board. */
-trait Piece{
+trait Piece extends GameObject{
   /** The piece obtained by rotating this left through 90 degrees. */
   def rotateLeft: Piece
 
@@ -99,8 +103,6 @@ trait TwoEndPiece extends Piece{
   val filledFrom = new Array[Int](2)
 }
 
-/* Note: we will follow the convention that, for two-ended pieces, the name of
- * the class matches the order of ends. */
 
 // =======================================================
 
@@ -109,6 +111,9 @@ trait StraightPiece extends TwoEndPiece{
   val shapeIndex = 0
   val score = 1
 }
+
+/* Note: we will follow the convention that, for straight pieces, the name of
+ * the class matches the order of ends. */
 
 /** A pipe running North-South. */
 case class NS() extends StraightPiece{
@@ -130,27 +135,41 @@ case class EW() extends StraightPiece{
 trait CurvedPiece extends TwoEndPiece{
   val shapeIndex = 1
   val score = 2
+  /* Displacement from bottom-left corner of square to centre of curvature:
+   * cartesian coordinates in units of grid squares. */
+  val ccdx: Int
+  val ccdy: Int
+  /* Angle from centre of curvature to start (clockwise-end) of curve
+   * (degrees, measured from the positive x-axis). */
+  val angle: Int
+   
 }
+
+/* Note: we will follow the convention that, for straight pieces, the order of
+ * ends is in a positive (anticlockwise) direction. */
 
 /** A curved piece connecting North and East edges. */
 case class NE() extends CurvedPiece{
   def rotateLeft = NW()
   def rotateRight = SE()
   val ends = List(N,E)
+  val ccdx = 1; val ccdy = 1; val angle = 180
 }
 
 /** A curved piece connecting North and West edges. */
 case class NW() extends CurvedPiece{
   def rotateLeft = SW()
   def rotateRight = NE()
-  val ends = List(N,W)
+  val ends = List(W,N)
+  val ccdx = 0; val ccdy = 1; val angle = 270
 }
 
 /** A curved piece connecting South and East edges. */
 case class SE() extends CurvedPiece{
   def rotateLeft = NE()
   def rotateRight = SW()
-  val ends = List(S,E)
+  val ends = List(E,S)
+  val ccdx = 1; val ccdy = 0; val angle = 90
 }
 
 /** A curved piece connecting South and West edges. */
@@ -158,6 +177,7 @@ case class SW() extends CurvedPiece{
   def rotateLeft = SE()
   def rotateRight = NW()
   val ends = List(S,W)
+  val ccdx = 0; val ccdy = 0; val angle = 0
 }
 
 // ===== T-junctions

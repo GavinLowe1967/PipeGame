@@ -8,10 +8,16 @@ import BasePanel._
 
 /** The panel displaying the pipe network. */
 class PipePanel(model: Model, frame: FrameT) 
-    extends BasePanel(model.width, model.height){
+    extends BasePanel/*(model.width, model.height)*/{
+  private val width = model.width; private val height = model.height
 
-  /* Width and height of the grid. */
-  //private val width = model.width; private val height = model.height
+  setSize(width, height)
+
+  /** Are the pipes currently being filled? */
+  private var filling = false
+
+  /** Update whether the pipes are currently being filled. */
+  def setFilling(f: Boolean) = { filling = f; repaint() }
 
   /** Convert grid coordinates to screen coordinates.  Return the screen
     * coordinates of the bottom-left corner of the grid square. */
@@ -28,7 +34,6 @@ class PipePanel(model: Model, frame: FrameT)
 
   /** Paint this component. */
   override def paintComponent(g: Graphics2D) = {
-    //println("PipePanel.paintComponent")
     /* Helper function. */
     /* Draw a line from (x1,y1) to (x2,y2) (in grid coordinates). */
     @inline def drawLine(x1: Int, y1: Int, x2: Int, y2: Int) = {
@@ -41,11 +46,13 @@ class PipePanel(model: Model, frame: FrameT)
     g.fillRect(Pad, Pad, scale(width), scale(height))
 
     // Draw water in pipes
-    g.setColor(WaterColour)
-    for(x <- 0 until width; y <- 0 until height){
-      val p = model.grid(x)(y)
-      if(p != null){
-        val (x1,y1) = gridToScreen(x,y); fillPipe(g, x1, y1, p)
+    if(filling){
+      g.setColor(WaterColour)
+      for(x <- 0 until width; y <- 0 until height){
+        val p = model.grid(x)(y)
+        if(p != null){
+          val (x1,y1) = gridToScreen(x,y); fillPipe(g, x1, y1, p)
+        }
       }
     }
 
@@ -59,7 +66,8 @@ class PipePanel(model: Model, frame: FrameT)
     }
 
     // Draw current piece
-    if(mouseX >= 0 && mouseY >= 0 && model.grid(mouseX)(mouseY) == null){ 
+    if(!filling && mouseX >= 0 && mouseY >= 0 && 
+        model.grid(mouseX)(mouseY) == null){
       //println("showing")
       g.setColor(CurrentPipeColour); val (x1,y1) = gridToScreen(mouseX,mouseY)
       drawPiece(g, x1, y1, model.getCurrentPiece)
@@ -71,18 +79,15 @@ class PipePanel(model: Model, frame: FrameT)
     for(y <- 0 to height) drawLine(0, y, width, y)
   }
 
-  /** Reactions to mouse and key presses. */
-  //def init = {
+  /* Reactions to mouse and key presses. */
   focusable = true; requestFocus(); listenTo(mouse.clicks,mouse.moves,keys) 
 
-  // init
   reactions += {
     case KeyPressed(_,c,_,_) => c match{
       case Key.Q => frame.quitFrame; sys.exit()
       case Key.Z => model.rotateLeft(); repaint()
       case Key.X => model.rotateRight(); repaint()
       case Key.K => model.killPiece(); repaint()
-      // case Key.Enter => model.endLevel(); repaint()
       case _ => {}
     }
     case e: MouseClicked => 

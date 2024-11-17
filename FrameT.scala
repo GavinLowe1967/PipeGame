@@ -8,10 +8,15 @@ trait FrameT{
   /** Set the score to be `score`. */
   //def setScore(score: Int): Unit
 
+  /** Update the info panel. */
   def updateInfo(): Unit
 
+  /** Quit. */
   def quitFrame: Unit
 
-
+  /** Redraw the main panel. */
   def update(): Unit
+
+  /** Update whether the pipes are currently being filled. */
+  def setFilling(f: Boolean): Unit
 }

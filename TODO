@@ -1,12 +1,17 @@
 1. Finish animating pieces -- done
 
-2. When filling, don't display current piece.  
+2. When filling, don't display current piece.  -- done
 
 3. Complete checks in Model.endLevel.
 
-4. Improve printing of curves -- refactor
+4. Improve printing of curves -- refactor -- done
 
-5. Have "next level" button
+5. Have "kill" button
+
+6. Improve levels
+
+
+Have "next level" button
 
 End the game if level failed.
 

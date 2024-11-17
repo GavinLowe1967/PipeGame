@@ -1,6 +1,7 @@
 package pipegame
 
 import scala.swing._
+import javax.swing.{JScrollPane,ScrollPaneConstants}
 
 /** The main frame of the game. */
 class PipeFrame(model: Model) extends MainFrame with FrameT{
@@ -11,8 +12,12 @@ class PipeFrame(model: Model) extends MainFrame with FrameT{
   /** The top panel, displaying the next piece. */
   private val topPanel = new TopPanel(model)
 
+  private val scrollTopPanel = new ScrollPane(topPanel){ 
+    preferredSize = new Dimension(600, 80) 
+  }
+
   /** Set the next piece to be p. */
-  def setNextPieces(ps: List[Piece]) = topPanel.setNextPieces(ps)
+  def setNextPieces(ps: List[Piece]) = topPanel.setNextPieces(ps) 
 
   /** Panel displaying score. etc. */
   private val infoPanel = new InfoPanel(model)
@@ -25,7 +30,7 @@ class PipeFrame(model: Model) extends MainFrame with FrameT{
   contents = new BoxPanel(Orientation.Vertical) {  
     import Swing._
     border = EmptyBorder(10)
-    contents ++= List(topPanel, VStrut(5), infoPanel, VStrut(5))
+    contents ++= List(scrollTopPanel, VStrut(5), infoPanel, VStrut(5))
     contents += new BoxPanel(Orientation.Horizontal){ 
       border = EmptyBorder(5)
       contents ++= List(HStrut(20), HGlue, HGlue, panel, HGlue, HStrut(20))
@@ -36,4 +41,7 @@ class PipeFrame(model: Model) extends MainFrame with FrameT{
   peer.setDefaultCloseOperation(EXIT_ON_CLOSE)
 
   def quitFrame = { println("quitting"); close(); dispose(); sys.exit() }
+
+  /** Update whether the pipes are currently being filled. */
+  def setFilling(f: Boolean) = panel.setFilling(f)
 }

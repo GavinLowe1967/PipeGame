@@ -2,14 +2,14 @@ package pipegame
 
 import scala.util.Random
 
-class Model(val width: Int, val height: Int, level0: Int){
+class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
   import Piece.{NumShapes,FillSteps}
 
   private val random = 
     new Random(Random.nextInt() ^ java.lang.System.currentTimeMillis)
 
   /** Total number of squares. */
-  private val size = width*height
+  val size = width*height
 
   /** The frame.  Set by the MazeGame object. */
   private var frame: FrameT = null
@@ -69,43 +69,67 @@ class Model(val width: Int, val height: Int, level0: Int){
     grid(sinkX)(height-1) = p
     currentPiece = getPiece()
     // println(nextPieces.mkString(", "))
+    frame.setFilling(false)
     frame.setNextPieces(nextPieces)
   }
 
-  private def nextLevel() = { level += 1; initLevel(); frame.update() }
+  private def nextLevel() = { 
+    level += 1; killsLeft += 1; frame.updateInfo(); initLevel() }
 
   /** Initialise nextPieces to length `size`, with pieces following the
     * proportions for this level, as near as possible. */
   private def initNextPieces() = {
     import LevelInfo._
-    val LevelInfo(probs) = 
-      if(level < levels.length) levels(level) else defaultLevel
+    val levelinfo @ LevelInfo(probs) = LevelInfo.get(level+adjustment)
+    println(levelinfo)
     // Each shape, with index ix, should appear roughly ideals(ix) =
     // size*probs(ix) times: either the floor or the ceiling of that number.
     val ideals = Array.tabulate[Double](NumShapes)(ix => size*probs(ix))
     // println(ideals.map(_.toString).mkString(", "))
     val remainders = new Array[Double](NumShapes) 
-    // `remainders` will hold the fractional parts of `ideals`.  `pieces` are
-    // the pieces chosen so far.  `len = pieces.length`.
-// IMPROVE: use array for pieces
-    var pieces = List[Piece](); var len = 0
+    // `remainders` will hold the fractional parts of `ideals`.
+    // `pieces[0..n)` are the pieces chosen so far.
+    var pieces = new Array[Piece](size); var n = 0
     for(ix <- 0 until NumShapes){
-      // Add k = floor(ideals(ix)) shapes from shapeClasses(ix) to nextPieces.
-      val k = ideals(ix).toInt; len += k; remainders(ix) = ideals(ix)-k
-      pieces = List.fill(k)(choosePiece(ix)) ++ pieces
+      // Add k = floor(ideals(ix)) shapes from shapeClasses(ix) to pieces
+      val k = ideals(ix).toInt
+      for(i <- n until n+k) pieces(i) = choosePiece(ix)
+      n += k; remainders(ix) = ideals(ix)-k
+      // pieces = List.fill(k)(choosePiece(ix)) ++ pieces
     }
-    assert(len <= size && size-len < NumShapes)
-    // Add extra shapes from classes in extras: those with largest remainders.
-    val extras = (0 until NumShapes).sortBy(ix => -remainders(ix)).take(size-len)
-    for(ix <- extras) pieces ::= choosePiece(ix)
+    assert(n <= size && size-n < NumShapes)
+
+    // Add size-n extra shapes from classes in extras: those with largest
+    // remainders.
+    val extras = (0 until NumShapes).sortBy(ix => -remainders(ix))//.take(size-n)
+    for(i <- 0 until size-n) pieces(n+i) = choosePiece(extras(i))
+    //for(ix <- extras) pieces ::= choosePiece(ix)
+
     // Shuffle pieces into nextPieces
-    nextPieces = List(); len = size // Inv: len = pieces.length
-    while(len > 0){
-      val k = random.nextInt(len); val (pref, p::suf) = pieces.splitAt(k)
-      nextPieces ::= p; pieces = pref++suf; len -= 1
+    def swap(i: Int, j: Int) = { 
+      val t = pieces(i); pieces(i) = pieces(j); pieces(j) = t
     }
-    assert(pieces.isEmpty && nextPieces.length == size) 
+    for(i <- 0 until size) swap(i, i+Random.nextInt(size-i))
+    // nextPieces = List(); len = size // Inv: len = pieces.length
+    // while(len > 0){
+    //   val k = random.nextInt(len); val (pref, p::suf) = pieces.splitAt(k)
+    //   nextPieces ::= p; pieces = pref++suf; len -= 1
+    // }
+    // assert(pieces.isEmpty && nextPieces.length == size) 
+
+    // Now try to even out clusters of the same shape: traverse, recording how
+    // many of each shape have been seen so far; if a piece is encountered
+    // that already exceeds its expected count, then swap it with another
+    // piece.
+    val counts = new Array[Int](NumShapes)
+    for(i <- 0 until size-1){
+      val sh = pieces(i).shapeIndex
+      if(counts(sh) > i*probs(sh)) swap(i, i+Random.nextInt(size-i))
+      counts(pieces(i).shapeIndex) += 1
+    }
+
     //; println(nextPieces.mkString(", "))
+    nextPieces = pieces.toList
   }
 
   /** Choose a random piece from shapeClasses(ix). */
@@ -156,13 +180,14 @@ class Model(val width: Int, val height: Int, level0: Int){
     true
   }
 
-  /** Time to fill one square. */
-  private val SquareFillTime = 250
+  /** Time to fill one square from the source. */
+  private val SquareFillTime = 180
 
   /** Animate the filling of the pipes. */
   private def fillPipes() = {
     import Piece.{S,End,endToDelta,reverse}
     println("End of level")
+    frame.setFilling(true)
     /* We perform a breadth-first traversal.  At each ply, we fill all pieces in
      * the current ply, then move to the next ply.  Note, though, that in
      * order to cater for cross-over pieces, we need to keep track of the
@@ -184,7 +209,8 @@ class Model(val width: Int, val height: Int, level0: Int){
         frontier.map{case(x,y,_) => (x,y)}.distinct.map{case (x,y) => grid(x)(y)}
       for(i <- 0 until FillSteps){
         for(p <- frontierPs) p.fillStep()
-        Thread.sleep(SquareFillTime/FillSteps); frame.update() 
+        Thread.sleep(SquareFillTime*(frontier.length+1)/(2*FillSteps))
+        frame.update()
       }
       // Find frontier for next iteration
       var newFrontier = List[(Int,Int,End)]()
@@ -214,7 +240,7 @@ class Model(val width: Int, val height: Int, level0: Int){
   def playAt(x: Int, y: Int) = if(grid(x)(y) == null){
     grid(x)(y) = currentPiece; addScore(currentPiece.score)
     if(isLevelOver) Concurrency.runThread{ 
-      fillPipes(); Thread.sleep(2000); nextLevel() // FIXME
+      fillPipes(); Thread.sleep(1500); nextLevel() // FIXME
     }
     else getNextPiece()
   }

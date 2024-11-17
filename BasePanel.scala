@@ -5,11 +5,11 @@ import java.awt.Color
 
 /** The base class of the main and top panels.  Defines various operations
   * common to each, such as drawing pieces. */
-abstract class BasePanel(val width: Int, val height: Int) extends Panel{
+abstract class BasePanel extends Panel{
   /** Size of one square in pixels. */ 
   protected val SquareSize = 60
 
-  /** Padding around between maze and edge of panel. */
+  /** Padding around between grid and edge of panel. */
   protected val Pad = 0 // 5
 
   /** The with of a pipe. */
@@ -26,10 +26,13 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
   private val PipeEnd = PipeWidth+PipePad
 
   /** Scale grid coordinate to pixels. */
-  @inline protected def scale(x: Int) = x*SquareSize
+  @inline def scale(x: Int) = x*SquareSize
 
-  preferredSize = new Dimension(scale(width)+2*Pad, scale(height)+2*Pad)
-  minimumSize = preferredSize
+  /** Set the size of the Panel, in square units. */
+  def setSize(width: Int, height: Int) = {
+    preferredSize = new Dimension(scale(width)+2*Pad, scale(height)+2*Pad)
+    minimumSize = preferredSize
+  }
 
   // ===== Drawing straight lines
 
@@ -75,15 +78,6 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
     * from and from+90. */
   private def quarterCircle(x: Int, y: Int, radius: Int, from: Int) =
     arc(x, y, radius, from, 90)
-    // new Arc2D.Double(
-    //   x-radius, y-radius, 2*radius, 2*radius, from, 90, Arc2D.OPEN) 
-
-
-  // private def quarterPie(x: Int, y: Int, radius: Int, from: Int, angle: Int) = 
-  //   new Arc2D.Double(
-  //     x-radius, y-radius, 2*radius, 2*radius, from, angle, Arc2D.PIE)
-  
-
 
   // ===== Drawing a piece
 
@@ -116,10 +110,14 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
     p match{
       case NS() => drawWest; drawEast
       case EW() => drawNorth; drawSouth
+      case cp: CurvedPiece => 
+        drawQuarterArc(g, x+cp.ccdx*SquareSize, y-cp.ccdy*SquareSize, cp.angle)
+/*
       case NE() => drawQuarterArc(g, x+SquareSize, y-SquareSize, 180)
       case NW() => drawQuarterArc(g, x, y-SquareSize, 270)
       case SE() => drawQuarterArc(g, x+SquareSize, y, 90)
       case SW() => drawQuarterArc(g, x, y, 0)
+ */
       case NES() => drawWest; drawSE; drawNE; drawES; drawEN
       case ESW() => drawNorth; drawES; drawWS; drawSE; drawSW
       case SWN() => drawEast; drawSW; drawNW; drawWS; drawWN
@@ -203,20 +201,24 @@ abstract class BasePanel(val width: Int, val height: Int) extends Panel{
       case _: StraightPiece =>
         for(ix <- 0 until 2) drawWaterFrom(p.ends(ix), p.filledFrom(ix))
 
-      // IMPROVE following
+      case cp: CurvedPiece =>
+        val ccx = x+cp.ccdx*SquareSize; val ccy = y-cp.ccdy*SquareSize
+        drawWaterArc(ccx, ccy, cp.angle, cp.filledFrom(0))
+        drawWaterArc(ccx, ccy, cp.angle+90, -cp.filledFrom(1))
+/*
       case NE() =>
         drawWaterArc(x+SquareSize, y-SquareSize, 180, p.filledFrom(0))
         drawWaterArc(x+SquareSize, y-SquareSize, 270, -p.filledFrom(1))
       case NW() => 
-        drawWaterArc(x, y-SquareSize, 0, -p.filledFrom(0))
-        drawWaterArc(x, y-SquareSize, 270, p.filledFrom(1))
+        drawWaterArc(x, y-SquareSize, 0, -p.filledFrom(1))
+        drawWaterArc(x, y-SquareSize, 270, p.filledFrom(0))
       case SE() =>
-        drawWaterArc(x+SquareSize, y, 180, -p.filledFrom(0))
-        drawWaterArc(x+SquareSize, y, 90, p.filledFrom(1))
+        drawWaterArc(x+SquareSize, y, 180, -p.filledFrom(1))
+        drawWaterArc(x+SquareSize, y, 90, p.filledFrom(0))
       case SW() => 
         drawWaterArc(x, y, 0, p.filledFrom(0))
         drawWaterArc(x, y, 90, -p.filledFrom(1))
-
+ */
       case _: TJunctionPiece =>
         // Draw from ends inwards
         for(ix <- 0 until 3)
