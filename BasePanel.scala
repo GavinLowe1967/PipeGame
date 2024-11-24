@@ -112,16 +112,12 @@ abstract class BasePanel extends Panel{
       case EW() => drawNorth; drawSouth
       case cp: CurvedPiece => 
         drawQuarterArc(g, x+cp.ccdx*SquareSize, y-cp.ccdy*SquareSize, cp.angle)
-/*
-      case NE() => drawQuarterArc(g, x+SquareSize, y-SquareSize, 180)
-      case NW() => drawQuarterArc(g, x, y-SquareSize, 270)
-      case SE() => drawQuarterArc(g, x+SquareSize, y, 90)
-      case SW() => drawQuarterArc(g, x, y, 0)
- */
+      // T-pieces
       case NES() => drawWest; drawSE; drawNE; drawES; drawEN
       case ESW() => drawNorth; drawES; drawWS; drawSE; drawSW
       case SWN() => drawEast; drawSW; drawNW; drawWS; drawWN
       case WNE() => drawSouth; drawWN; drawEN; drawNE; drawNW
+      // Crossroads and cross-overs
       case Cross() =>
         drawNE; drawNW; drawSE; drawSW; drawWN; drawWS; drawEN; drawES
       case NSOverEW() => drawWest; drawEast; drawWN; drawWS; drawEN; drawES
@@ -129,6 +125,8 @@ abstract class BasePanel extends Panel{
     }
     g.setStroke(new java.awt.BasicStroke(1)) // reset
   }
+
+  // ===== Filling a piece with water
 
   /** The size, in screen coordinates, of `steps` steps of filling. */
   @inline private def sizeFor(steps: Int) = steps*SquareSize/Piece.FillSteps
@@ -205,20 +203,7 @@ abstract class BasePanel extends Panel{
         val ccx = x+cp.ccdx*SquareSize; val ccy = y-cp.ccdy*SquareSize
         drawWaterArc(ccx, ccy, cp.angle, cp.filledFrom(0))
         drawWaterArc(ccx, ccy, cp.angle+90, -cp.filledFrom(1))
-/*
-      case NE() =>
-        drawWaterArc(x+SquareSize, y-SquareSize, 180, p.filledFrom(0))
-        drawWaterArc(x+SquareSize, y-SquareSize, 270, -p.filledFrom(1))
-      case NW() => 
-        drawWaterArc(x, y-SquareSize, 0, -p.filledFrom(1))
-        drawWaterArc(x, y-SquareSize, 270, p.filledFrom(0))
-      case SE() =>
-        drawWaterArc(x+SquareSize, y, 180, -p.filledFrom(1))
-        drawWaterArc(x+SquareSize, y, 90, p.filledFrom(0))
-      case SW() => 
-        drawWaterArc(x, y, 0, p.filledFrom(0))
-        drawWaterArc(x, y, 90, -p.filledFrom(1))
- */
+
       case _: TJunctionPiece =>
         // Draw from ends inwards
         for(ix <- 0 until 3)
@@ -246,6 +231,28 @@ abstract class BasePanel extends Panel{
     }
     g.setStroke(new java.awt.BasicStroke(1)) // reset
   }
+
+  private val ObsOffset = 10
+
+  /** Draw an obstacle in square with bottom-left corner (x, y). */
+  protected def drawObstacle(g: Graphics2D, x: Int, y: Int) = {
+    setPenToDrawPipe(g)
+    val x1 = x+ObsOffset; val x2 = x+SquareSize-ObsOffset
+    val y1 = y-ObsOffset; val y2 = y-SquareSize+ObsOffset
+    drawLine(g, x1, y1, x2, y2); drawLine(g, x1, y2, x2, y1)
+    g.setStroke(new java.awt.BasicStroke(1)) // reset
+  }
+
+  private val KillOffset = 20
+
+  /** Draw an obstacle in square with bottom-left corner (x, y). */
+  protected def drawKill(g: Graphics2D, x: Int, y: Int) = {
+    g.setColor(BasePanel.KillSymbolColour); setPenToDrawPipe(g)
+    val x1 = x+KillOffset; val x2 = x+SquareSize-KillOffset
+    val y1 = y-KillOffset; val y2 = y-SquareSize+KillOffset
+    drawLine(g, x1, y1, x2, y2); drawLine(g, x1, y2, x2, y1)
+    g.setStroke(new java.awt.BasicStroke(1)) // reset
+  }
 }
 
 // =======================================================
@@ -268,4 +275,7 @@ object BasePanel{
 
   /** Colour of the queued pieces. */
   val QueuedPipeColour = new Color(160, 160, 255) // light blue
+
+  /** Colour of kill symbol. */
+  val KillSymbolColour = new Color(255, 0, 0)
 }

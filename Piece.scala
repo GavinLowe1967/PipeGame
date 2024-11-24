@@ -1,7 +1,12 @@
 package pipegame
 
-trait GameObject
+/** An object that can appear on the board: either a Piece of an Obstacle. */
+trait GameObject{
+  /** Cast this to a Piece.  Pre: it is indeed a Piece. */
+  def asPiece = asInstanceOf[Piece]
+}
 
+/** An obstacle on the board. */
 object Obstacle extends GameObject
 
 /** Companion object for pieces on the board. */

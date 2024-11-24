@@ -4,7 +4,7 @@ import scala.swing._
 
 /** A panel containing information about score, etc. */
 class InfoPanel(model: Model) extends BasePanel{
-  val width = model.width
+  val width = model.width-1
 
   setSize(width, 2)
 
@@ -20,9 +20,9 @@ class InfoPanel(model: Model) extends BasePanel{
       g.drawString(text, xx, yy)
     }
     val y = Pad+SquareSize/2
-    centreText(Pad+scale(2), y, s"Score: ${model.getScore}")
+    centreText(Pad+scale(1), y, s"Score: ${model.getScore}")
     centreText(Pad+scale(width-2), y, s"Kills left: ${model.getKillsLeft}")
-    centreText(Pad+scale(2), y+SquareSize, s"Level: ${model.getLevel}")
+    centreText(Pad+scale(1), y+SquareSize, s"Level: ${model.getLevel}")
   }
 
 
