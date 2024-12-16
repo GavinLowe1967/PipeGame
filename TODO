@@ -1,28 +1,30 @@
-1. Check level is possible: sink reachable from source -- done
-
-* Numbers by queued pieces
+1. Improve levels
 
 2. Complete checks in Model.endLevel.
 
-3. Improve levels
+3. Message box
 
-4. Reset scroll bar on new piece
+4. Info on number of each shape remaining.
 
-5. Don't display current piece when mouse off board.
+==========================================
+
+Delete penalty *2 -- done
+4. Reset scroll bar on new piece -- done
+
+5. Don't display current piece when mouse off board. -- done
 
 6. Have "kill" button -- done
 
-Have "next level" button
+1. Check level is possible: sink reachable from source -- done
 
-End the game if level failed.
-
-Message box
-
-
-==========================================
+* Numbers by queued pieces -- done
 
 1. Finish animating pieces -- done
 
 2. When filling, don't display current piece.  -- done
 
 4. Improve printing of curves -- refactor -- done
+
+Have "next level" button -- no
+
+End the game if level failed. -- no

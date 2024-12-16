@@ -14,15 +14,10 @@ class InfoPanel(model: Model) extends BasePanel{
   override def paintComponent(g: Graphics2D) = {
     super.paintComponent(g)
     g.setFont(scoreFont); val metrics = g.getFontMetrics(scoreFont)
-    /* Add text with centre at (x,y). */
-    def centreText(x: Int, y: Int, text: String) = {
-      val xx = x-metrics.stringWidth(text)/2; val yy = y+metrics.getHeight/2
-      g.drawString(text, xx, yy)
-    }
     val y = Pad+SquareSize/2
-    centreText(Pad+scale(1), y, s"Score: ${model.getScore}")
-    centreText(Pad+scale(width-2), y, s"Kills left: ${model.getKillsLeft}")
-    centreText(Pad+scale(1), y+SquareSize, s"Level: ${model.getLevel}")
+    centreText(g, Pad+scale(1.5), y, s"Score: ${model.getScore}")
+    centreText(g, Pad+scale(width-2), y, s"Kills left: ${model.getKillsLeft}")
+    centreText(g, Pad+scale(1), y+SquareSize, s"Level: ${model.getLevel}")
   }
 
 

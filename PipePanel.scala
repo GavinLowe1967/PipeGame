@@ -114,6 +114,8 @@ class PipePanel(model: Model, frame: FrameT)
         if(x != mouseX || y != mouseY){ mouseX = x; mouseY = y; repaint() }
       }
       else{ mouseX = -1; mouseY = -1 }
+
+    case e: MouseExited => mouseX = -1; mouseY = -1; repaint()
   }
 
   /** Extract the button from a MouseClicked event. */

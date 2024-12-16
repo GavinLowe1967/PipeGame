@@ -19,4 +19,7 @@ trait FrameT{
 
   /** Update whether the pipes are currently being filled. */
   def setFilling(f: Boolean): Unit
+
+  /** Reset the scrollbar on the queued pieces. */
+  //def resetScrollBar() : Unit
 }

@@ -3,7 +3,7 @@ package pipegame
 import scala.util.Random
 import scala.collection.mutable.Stack
 
-class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
+class Model(val width: Int, val height: Int, level0: Int){
   import Piece.{NumShapes,FillSteps}
 
   private val random = 
@@ -53,7 +53,6 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
     val p = nextPieces.head; nextPieces = nextPieces.tail; p
   }
 
-
   /** Are (x1,y1) and (x2,y2) near to one another, within at most 1, both
     * horizontally and vertically? */
   private def near(x1: Int, y1: Int, x2: Int, y2: Int) : Boolean = 
@@ -62,8 +61,7 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
   /** Initialise the next level. */
   private def initLevel(): Unit = {
     import Piece.{N,S,E,W}
-    val levelInfo = LevelInfo.get(level+adjustment)
-    println(levelInfo)
+    val levelInfo = LevelInfo.get(level); println(levelInfo)
     // Clear board
     for(x <- 0 until width; y <- 0 until height) grid(x)(y) = null
     // Initialise pieces
@@ -88,6 +86,7 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
 
     // Set obstacles
     val numObstacles = levelInfo.numObstacles
+    assert(numObstacles <= height*width - 12) // or else loop below spins!
     for(i <- 0 until numObstacles){
       var x = Random.nextInt(width); var y = Random.nextInt(height)
       while(grid(x)(y) != null || near(x, y, sourceX, SourceY) ||
@@ -99,20 +98,15 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
     }
 
     // If not possible, try again
-    if(!isPossible(source, sink)) initLevel()
+    if(!isPossible(source, sink)){ 
+      println(s"$levelInfo impossible"); initLevel()
+    }
     else{    // Update frame
       frame.setFilling(false); frame.setNextPieces(nextPieces)
     }
   }
 
   type Coord = (Int,Int)
-
-  /** The neighbouring coordinates of the piece at `coord`.  Note: these might
-    * include coordinates off the board. */
-  // private def neighbours(coord: Coord): List[Coord] = {
-  //   val (x,y) = coord
-  //   grid(x)(y).asPiece.deltas.map{ case (dx,dy) => (x+dx, y+dy) }
-  // }
 
   /** Is there a route from `source` to `sink`, avoiding obstacles? */
   private def isPossible(source: Coord, sink: Coord): Boolean = {
@@ -136,7 +130,7 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
             stack.push((x1,y1)); seen(x1)(y1) = true
           }
     } // end of while loop
-    if(!done){
+    if(false && !done){ // print grid
       for(y <- height-1 to 0 by -1){
         for(x <- 0 until width) print(grid(x)(y) match{
           case null => " "; case Obstacle => "X"; case p: Piece => "*"
@@ -148,7 +142,7 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
   }
 
   private def nextLevel() = { 
-    level += 1; killsLeft += 1; frame.updateInfo(); initLevel() }
+    level += 1; frame.updateInfo(); initLevel() }
 
   /** Initialise nextPieces to length `size`, with pieces following the
     * proportions for this level, as near as possible. */
@@ -175,7 +169,6 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
     // remainders.
     val extras = (0 until NumShapes).sortBy(ix => -remainders(ix))
     for(i <- 0 until numPieces-n) pieces(n+i) = choosePiece(extras(i))
-    //for(ix <- extras) pieces ::= choosePiece(ix)
 
     // Shuffle pieces into nextPieces
     def swap(i: Int, j: Int) = { 
@@ -183,7 +176,7 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
     }
     for(i <- 0 until numPieces) swap(i, i+Random.nextInt(numPieces-i))
 
-    // Now try to even out clusters of the same shape: traverse, recording how
+    // Try to even out clusters of the same shape: traverse, recording how
     // many of each shape have been seen so far; if a piece is encountered
     // that already exceeds its expected count, then swap it with another
     // piece.
@@ -204,8 +197,7 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
 
   /** Update state to move to the next piece. */
   private def getNextPiece() = {
-    currentPiece = nextPieces.head; 
-    nextPieces = nextPieces.tail :+ getPiece() 
+    currentPiece = nextPieces.head; nextPieces = nextPieces.tail
     frame.setNextPieces(nextPieces)
   }
 
@@ -215,8 +207,20 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
   /** Get the current score.  Called by the InfoPanel. */
   def getScore = score
 
+  /** Number of points needed to get an extra kill. */
+  private val KillBonusScore = 100
+
+  /** Score where the next extra kill will be awarded. */
+  private var nextKillBonus = KillBonusScore
+
   /** Add s to the score. */
-  private def addScore(s: Int) = { score += s; frame.updateInfo() }
+  private def addScore(s: Int) = { 
+    score += s
+    if(score >= nextKillBonus){ // earned an extra kill
+      killsLeft += 1; nextKillBonus += KillBonusScore 
+    }
+    frame.updateInfo()
+  }
 
   /** Number of kills still allowed. */
   private var killsLeft = 5
@@ -251,7 +255,6 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
   /** Animate the filling of the pipes. */
   private def fillPipes() = {
     import Piece.{S,End,endToDelta,reverse}
-    println("End of level")
     frame.setFilling(true)
     /* We perform a breadth-first traversal.  At each ply, we fill all pieces in
      * the current ply, then move to the next ply.  Note, though, that in
@@ -266,14 +269,13 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
     val seen = Array.ofDim[Boolean](width, height, 4); 
     for(end <- grid(sourceX)(0).asPiece.connectsTo(S))
       seen(sourceX)(0)(end) = true
-    // println()
     while(frontier.nonEmpty){ 
       // Animate filling.
       val frontierPs = 
         frontier.map{case(x,y,_) => (x,y)}.distinct.map{case (x,y) => grid(x)(y)}
       for(i <- 0 until FillSteps){
         for(p <- frontierPs) p.asPiece.fillStep()
-        Thread.sleep(SquareFillTime*(frontier.length+1)/(2*FillSteps))
+        Thread.sleep(SquareFillTime*(frontier.length+2)/(3*FillSteps))
         frame.update()
       }
       // Find frontier for next iteration
@@ -303,7 +305,7 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
   def playAt(x: Int, y: Int) = if(grid(x)(y) == null){
     grid(x)(y) = currentPiece; addScore(currentPiece.score)
     if(isLevelOver) Concurrency.runThread{ 
-      fillPipes(); Thread.sleep(1500); nextLevel() 
+      fillPipes(); Thread.sleep(800); nextLevel() 
     }
     else getNextPiece()
   }
@@ -313,9 +315,11 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
     println("kill")
     if((x,y) == sink) println("Sink")
     else if((x,y) == source) println("Source")
-  // FIXME: not source, sink
     else if(killsLeft > 0) grid(x)(y) match{
-      case p: Piece => grid(x)(y) = null; killPiece(p)
+      case p: Piece => 
+        // Note: the player has been awarded for playing p, so we remove that,
+        // and apply an extra penalty.
+        grid(x)(y) = null; addScore(-2*p.score); killPiece(p)
       case _ => println("Non-kill")
     }
     else println("No kills left") // IMPROVE
@@ -323,23 +327,17 @@ class Model(val width: Int, val height: Int, level0: Int, adjustment: Int){
 
   /** Kill piece p. */
   private def killPiece(p: Piece) = {
-    // Apply penalty equal to the piece's value.
-    addScore(-p.score)
+    // Note: calling code is expected to apply a score penalty.
     // Replace at end of queue
-    nextPieces = nextPieces :+ p
-    killsLeft -= 1; frame.updateInfo()
+    nextPieces = nextPieces :+ p; killsLeft -= 1; frame.updateInfo()
   }
 
   /** Kill the current piece. */
   def killCurrentPiece() = {
     if(killsLeft > 0){
-      killPiece(currentPiece)
-      // // Apply penalty equal to the piece's value.
-      // addScore(-currentPiece.score)
-      // // Replace at end of queue
-      // nextPieces = nextPieces :+ currentPiece
-      // killsLeft -= 1; frame.updateInfo()
-      getNextPiece()
+      // Apply penalty equal to the piece's value.
+      addScore(-currentPiece.score)
+      killPiece(currentPiece); getNextPiece()
     }
     else println("No kills left") // IMPROVE
   }

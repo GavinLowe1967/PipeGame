@@ -6,8 +6,7 @@ import java.awt.Color
 /** The base class of the main and top panels.  Defines various operations
   * common to each, such as drawing pieces. */
 abstract class BasePanel extends Panel{
-  /** Size of one square in pixels. */ 
-  protected val SquareSize = 60
+  val SquareSize = BasePanel.SquareSize
 
   /** Padding around between grid and edge of panel. */
   protected val Pad = 0 // 5
@@ -28,10 +27,20 @@ abstract class BasePanel extends Panel{
   /** Scale grid coordinate to pixels. */
   @inline def scale(x: Int) = x*SquareSize
 
+  /** Scale grid coordinate to pixels. */
+  @inline def scale(x: Double) = (x*SquareSize).toInt
+
   /** Set the size of the Panel, in square units. */
   def setSize(width: Int, height: Int) = {
     preferredSize = new Dimension(scale(width)+2*Pad, scale(height)+2*Pad)
     minimumSize = preferredSize
+  }
+
+  /* Add text with centre at (x,y). */
+  def centreText(g: Graphics2D, x: Int, y: Int, text: String) = {
+    val metrics = g.getFontMetrics(g.getFont)
+    val xx = x-metrics.stringWidth(text)/2; val yy = y+metrics.getHeight/2
+    g.drawString(text, xx, yy)
   }
 
   // ===== Drawing straight lines
@@ -258,6 +267,9 @@ abstract class BasePanel extends Panel{
 // =======================================================
 
 object BasePanel{
+  /** Size of one square in pixels. */ 
+  val SquareSize = 60
+
   /** Background colour. */
   val BackgroundColour = Color.white
 

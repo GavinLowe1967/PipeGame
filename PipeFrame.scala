@@ -13,11 +13,24 @@ class PipeFrame(model: Model) extends MainFrame with FrameT{
   private val topPanel = new TopPanel(model)
 
   private val scrollTopPanel = new ScrollPane(topPanel){ 
-    preferredSize = new Dimension(600, 80) 
+    preferredSize = 
+      new Dimension(/*model.width*model.height*BasePanel.SquareSize*/ 600, 100)
+
+    // def resetSB = horizontalScrollBar.value = 0
   }
 
+  /** Reset the scrollbar on the top panel. */
+  private def resetScrollBar() = {
+    // println("resetScrollBar")
+    scrollTopPanel.horizontalScrollBar.value = 0
+  }
+  // Note: the compiler gives a strange warning of the above is packaged into
+  // a function inside scrollTopPanel
+
   /** Set the next piece to be p. */
-  def setNextPieces(ps: List[Piece]) = topPanel.setNextPieces(ps) 
+  def setNextPieces(ps: List[Piece]) = {
+    topPanel.setNextPieces(ps); resetScrollBar()
+  }
 
   /** Panel displaying score. etc. */
   private val infoPanel = new InfoPanel(model)
@@ -35,7 +48,7 @@ class PipeFrame(model: Model) extends MainFrame with FrameT{
     action = Action("Kill"){ panel.setKillMode(true) }
   }
 
-  private val buttongroup = new ButtonGroup {
+  private val buttonGroup = new ButtonGroup {
     buttons += placeButton; buttons += killButton
     select(placeButton)
   }
@@ -53,7 +66,7 @@ class PipeFrame(model: Model) extends MainFrame with FrameT{
     contents += new BoxPanel(Orientation.Horizontal){
       contents ++= List(HStrut(10), infoPanel, HGlue)
       contents += new BoxPanel(Orientation.Vertical) {
-        contents ++= List(placeButton, killButton)
+        contents ++= buttonGroup.buttons // List(placeButton, killButton)
       }
       contents += HStrut(20)
     }

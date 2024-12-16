@@ -2,7 +2,7 @@ package pipegame
 
 object PipeGame{
 
-  val width = 7; val height = 7 // size of game
+  val width = 8; val height = 8 // size of game
 
   def main(args: Array[String]) = {
     // parse arguments
@@ -13,7 +13,8 @@ object PipeGame{
       case "--easy" => adjustment = 0
     }
 
-    val model = new Model(width, height, level, adjustment)
+    LevelInfo.init(adjustment)
+    val model = new Model(width, height, level)
     val frame = new PipeFrame(model)
     model.init(frame)
     frame.peer.setLocationByPlatform(true)
